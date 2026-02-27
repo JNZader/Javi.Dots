@@ -120,18 +120,18 @@ func TestHandleBackupConfirmKeys(t *testing.T) {
 		}
 	})
 
-	t.Run("should go to NvimSelect on escape (go back)", func(t *testing.T) {
+	t.Run("should go to AIToolsSelect on escape with no AI tools (go back)", func(t *testing.T) {
 		m := NewModel()
 		m.Screen = ScreenBackupConfirm
 		m.Cursor = 0
 
 		// Note: ESC is handled by handleEscape(), not handleBackupConfirmKeys()
-		// This tests the handleEscape behavior
+		// With no AI tools set, goes back to AI tools select
 		result, _ := m.handleEscape()
 		newModel := result.(Model)
 
-		if newModel.Screen != ScreenNvimSelect {
-			t.Errorf("Expected ScreenNvimSelect (go back), got %v", newModel.Screen)
+		if newModel.Screen != ScreenAIToolsSelect {
+			t.Errorf("Expected ScreenAIToolsSelect (go back, no AI tools), got %v", newModel.Screen)
 		}
 	})
 }

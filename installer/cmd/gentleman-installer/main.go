@@ -26,6 +26,11 @@ type cliFlags struct {
 	nvim           bool
 	font           bool
 	backup         bool
+	aiTools          string
+	aiFramework      bool
+	aiPreset         string
+	aiModules        string
+	agentTeamsLite   bool
 }
 
 func parseFlags() *cliFlags {
@@ -45,6 +50,11 @@ func parseFlags() *cliFlags {
 	flag.BoolVar(&flags.nvim, "nvim", false, "Install Neovim configuration")
 	flag.BoolVar(&flags.font, "font", false, "Install Nerd Font")
 	flag.BoolVar(&flags.backup, "backup", true, "Backup existing configs (default: true)")
+	flag.StringVar(&flags.aiTools, "ai-tools", "", "AI tools: claude,opencode,gemini,copilot (comma-separated)")
+	flag.BoolVar(&flags.aiFramework, "ai-framework", false, "Install AI coding framework")
+	flag.StringVar(&flags.aiPreset, "ai-preset", "", "Framework preset: minimal, frontend, backend, fullstack, data, complete")
+	flag.StringVar(&flags.aiModules, "ai-modules", "", "Framework features: hooks,commands,skills,agents,sdd,mcp (comma-separated)")
+	flag.BoolVar(&flags.agentTeamsLite, "agent-teams-lite", false, "Install Agent Teams Lite SDD framework")
 
 	flag.Parse()
 	return flags
@@ -130,14 +140,58 @@ func runNonInteractive(flags *cliFlags) error {
 		wm = "none"
 	}
 
+	// Parse AI tools
+	var aiTools []string
+	if flags.aiTools != "" {
+		validAITools := map[string]bool{"claude": true, "opencode": true, "gemini": true, "copilot": true}
+		for _, tool := range strings.Split(flags.aiTools, ",") {
+			tool = strings.TrimSpace(strings.ToLower(tool))
+			if !validAITools[tool] {
+				return fmt.Errorf("invalid AI tool: %s (valid: claude, opencode, gemini, copilot)", tool)
+			}
+			aiTools = append(aiTools, tool)
+		}
+	}
+
+	// Validate AI preset
+	aiPreset := strings.ToLower(flags.aiPreset)
+	validPresets := map[string]bool{"minimal": true, "frontend": true, "backend": true, "fullstack": true, "data": true, "complete": true, "": true}
+	if !validPresets[aiPreset] {
+		return fmt.Errorf("invalid AI preset: %s (valid: minimal, frontend, backend, fullstack, data, complete)", aiPreset)
+	}
+
+	// Parse AI features (modules flag accepts feature names: hooks,commands,skills,agents,sdd,mcp)
+	var aiModules []string
+	if flags.aiModules != "" {
+		validFeatures := map[string]bool{"hooks": true, "commands": true, "skills": true, "agents": true, "sdd": true, "mcp": true}
+		for _, mod := range strings.Split(flags.aiModules, ",") {
+			mod = strings.TrimSpace(strings.ToLower(mod))
+			if mod == "" {
+				continue
+			}
+			if !validFeatures[mod] {
+				return fmt.Errorf("invalid AI feature: %s (valid: hooks, commands, skills, agents, sdd, mcp)", mod)
+			}
+			aiModules = append(aiModules, mod)
+		}
+	}
+
+	// Determine if framework should be installed
+	installFramework := flags.aiFramework || aiPreset != "" || len(aiModules) > 0 || flags.agentTeamsLite
+
 	// Create choices
 	choices := tui.UserChoices{
-		Terminal:     terminal,
-		Shell:        shell,
-		WindowMgr:    wm,
-		InstallNvim:  flags.nvim,
-		InstallFont:  flags.font,
-		CreateBackup: flags.backup,
+		Terminal:              terminal,
+		Shell:                 shell,
+		WindowMgr:             wm,
+		InstallNvim:           flags.nvim,
+		InstallFont:           flags.font,
+		CreateBackup:          flags.backup,
+		AITools:               aiTools,
+		InstallAIFramework:    installFramework,
+		AIFrameworkPreset:     aiPreset,
+		AIFrameworkModules:    aiModules,
+		InstallAgentTeamsLite: flags.agentTeamsLite,
 	}
 
 	fmt.Println("🚀 Gentleman.Dots Non-Interactive Installer")
@@ -148,6 +202,21 @@ func runNonInteractive(flags *cliFlags) error {
 	fmt.Printf("  Neovim:      %v\n", choices.InstallNvim)
 	fmt.Printf("  Font:        %v\n", choices.InstallFont)
 	fmt.Printf("  Backup:      %v\n", choices.CreateBackup)
+	if len(choices.AITools) > 0 {
+		fmt.Printf("  AI Tools:    %s\n", strings.Join(choices.AITools, ", "))
+	}
+	if choices.InstallAIFramework {
+		if choices.AIFrameworkPreset != "" {
+			fmt.Printf("  AI Framework: preset=%s\n", choices.AIFrameworkPreset)
+		} else if len(choices.AIFrameworkModules) > 0 {
+			fmt.Printf("  AI Framework: modules=%s\n", strings.Join(choices.AIFrameworkModules, ","))
+		} else {
+			fmt.Printf("  AI Framework: yes\n")
+		}
+		if choices.InstallAgentTeamsLite {
+			fmt.Printf("  Agent Teams:  yes\n")
+		}
+	}
 	fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
 	fmt.Println()
 
@@ -204,12 +273,27 @@ Non-Interactive Options:
   --font               Install Nerd Font
   --backup=false       Disable config backup (default: true)
 
+AI Options:
+  --ai-tools=<tools>   AI tools (comma-separated): claude, opencode, gemini, copilot
+  --ai-framework       Install AI coding framework
+  --ai-preset=<name>   Framework preset: minimal, frontend, backend, fullstack, data, complete
+  --ai-modules=<feats> Framework features (comma-separated): hooks, commands, skills, agents, sdd, mcp
+                       Each feature installs ALL items in that category (91 agents, 85 skills, etc.)
+  --agent-teams-lite   Install Agent Teams Lite SDD framework (can combine with --ai-modules=sdd for both)
+
 Examples:
   # Interactive TUI
   gentleman.dots
 
   # Non-interactive with Fish + Zellij + Neovim
   gentleman.dots --non-interactive --shell=fish --wm=zellij --nvim
+
+  # Full setup with AI tools and framework preset
+  gentleman.dots --non-interactive --shell=fish --nvim --ai-tools=claude,opencode,gemini,copilot --ai-preset=fullstack
+
+  # Custom feature selection with Agent Teams Lite
+  gentleman.dots --non-interactive --shell=zsh --ai-tools=claude --ai-framework \
+    --ai-modules=hooks,skills --agent-teams-lite
 
   # Test mode with Zsh + Tmux (no terminal, no nvim)
   gentleman.dots --test --non-interactive --shell=zsh --wm=tmux

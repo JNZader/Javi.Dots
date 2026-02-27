@@ -253,8 +253,17 @@ func (m Model) handleKeyPress(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case ScreenMainMenu:
 		return m.handleMainMenuKeys(key)
 
-	case ScreenOSSelect, ScreenTerminalSelect, ScreenFontSelect, ScreenShellSelect, ScreenWMSelect, ScreenNvimSelect, ScreenGhosttyWarning:
+	case ScreenOSSelect, ScreenTerminalSelect, ScreenFontSelect, ScreenShellSelect, ScreenWMSelect, ScreenNvimSelect, ScreenAIFrameworkConfirm, ScreenAIFrameworkPreset, ScreenGhosttyWarning:
 		return m.handleSelectionKeys(key)
+
+	case ScreenAIToolsSelect:
+		return m.handleAIToolsKeys(key)
+
+	case ScreenAIFrameworkCategories:
+		return m.handleAICategoriesKeys(key)
+
+	case ScreenAIFrameworkCategoryItems:
+		return m.handleAICategoryItemsKeys(key)
 
 	case ScreenLearnTerminals, ScreenLearnShells, ScreenLearnWM, ScreenLearnNvim:
 		return m.handleLearnMenuKeys(key)
@@ -342,15 +351,23 @@ func (m Model) handleKeyPress(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 func (m Model) handleEscape() (tea.Model, tea.Cmd) {
 	switch m.Screen {
 	// Installation wizard screens - go back through the flow
-	case ScreenOSSelect, ScreenTerminalSelect, ScreenFontSelect, ScreenShellSelect, ScreenWMSelect, ScreenNvimSelect:
+	case ScreenOSSelect, ScreenTerminalSelect, ScreenFontSelect, ScreenShellSelect, ScreenWMSelect, ScreenNvimSelect, ScreenAIToolsSelect, ScreenAIFrameworkConfirm, ScreenAIFrameworkPreset, ScreenAIFrameworkCategories, ScreenAIFrameworkCategoryItems:
 		return m.goBackInstallStep()
 	case ScreenGhosttyWarning:
 		// Go back to terminal selection
 		m.Screen = ScreenTerminalSelect
 		m.Cursor = 0
 	case ScreenBackupConfirm:
-		// Go back to Nvim selection (not abort)
-		m.Screen = ScreenNvimSelect
+		// Go back to last AI screen in the wizard flow
+		if len(m.Choices.AITools) > 0 && m.Choices.InstallAIFramework && m.AICategorySelected != nil {
+			m.Screen = ScreenAIFrameworkCategories
+		} else if len(m.Choices.AITools) > 0 && m.Choices.InstallAIFramework {
+			m.Screen = ScreenAIFrameworkPreset
+		} else if len(m.Choices.AITools) > 0 {
+			m.Screen = ScreenAIFrameworkConfirm
+		} else {
+			m.Screen = ScreenAIToolsSelect
+		}
 		m.Cursor = 0
 	// Content/Learn screens
 	case ScreenKeymapCategory:
@@ -553,6 +570,33 @@ func (m Model) goBackInstallStep() (tea.Model, tea.Cmd) {
 		m.Screen = ScreenWMSelect
 		m.Cursor = 0
 		m.Choices.InstallNvim = false
+
+	case ScreenAIToolsSelect:
+		m.Screen = ScreenNvimSelect
+		m.Cursor = 0
+		m.Choices.AITools = nil
+		m.AIToolSelected = nil
+
+	case ScreenAIFrameworkConfirm:
+		m.Screen = ScreenAIToolsSelect
+		m.Cursor = 0
+		m.Choices.InstallAIFramework = false
+
+	case ScreenAIFrameworkPreset:
+		m.Screen = ScreenAIFrameworkConfirm
+		m.Cursor = 0
+		m.Choices.AIFrameworkPreset = ""
+
+	case ScreenAIFrameworkCategories:
+		m.Screen = ScreenAIFrameworkPreset
+		m.Cursor = 0
+		m.Choices.AIFrameworkModules = nil
+		m.AICategorySelected = nil
+
+	case ScreenAIFrameworkCategoryItems:
+		// Back to categories — restore cursor to this category
+		m.Screen = ScreenAIFrameworkCategories
+		m.Cursor = m.SelectedModuleCategory
 	}
 
 	return m, nil
@@ -678,19 +722,549 @@ func (m Model) handleSelection() (tea.Model, tea.Cmd) {
 
 	case ScreenNvimSelect:
 		m.Choices.InstallNvim = m.Cursor == 0
-		// Detect existing configs before proceeding
-		m.ExistingConfigs = system.DetectExistingConfigs()
-		if len(m.ExistingConfigs) > 0 {
-			// Show backup confirmation screen
-			m.Screen = ScreenBackupConfirm
+		// Proceed to AI tools selection (skip on Termux)
+		if m.SystemInfo.IsTermux {
+			// Termux doesn't support AI tools, skip to backup/install
+			return m.proceedToBackupOrInstall()
+		}
+		m.Screen = ScreenAIToolsSelect
+		m.Cursor = 0
+		m.AIToolSelected = make([]bool, len(aiToolIDMap))
+
+	case ScreenAIFrameworkConfirm:
+		m.Choices.InstallAIFramework = m.Cursor == 0
+		if m.Choices.InstallAIFramework {
+			m.Screen = ScreenAIFrameworkPreset
 			m.Cursor = 0
 		} else {
-			// No existing configs, proceed directly
-			m.SetupInstallSteps()
-			m.Screen = ScreenInstalling
-			m.CurrentStep = 0
-			return m, func() tea.Msg { return installStartMsg{} }
+			return m.proceedToBackupOrInstall()
 		}
+
+	case ScreenAIFrameworkPreset:
+		if m.Cursor == 0 { // Custom — first option
+			m.Choices.AIFrameworkPreset = ""
+			// Initialize category selection map
+			m.AICategorySelected = make(map[string][]bool)
+			for _, cat := range moduleCategories {
+				m.AICategorySelected[cat.ID] = make([]bool, len(cat.Items))
+			}
+			m.Screen = ScreenAIFrameworkCategories
+			m.Cursor = 0
+		} else if m.Cursor >= 2 && m.Cursor <= 7 {
+			// Presets at indices 2-7 (after separator at 1)
+			presets := []string{"minimal", "frontend", "backend", "fullstack", "data", "complete"}
+			presetIdx := m.Cursor - 2
+			if presetIdx < len(presets) {
+				m.Choices.AIFrameworkPreset = presets[presetIdx]
+				m.Choices.AIFrameworkModules = nil
+				return m.proceedToBackupOrInstall()
+			}
+		}
+	}
+
+	return m, nil
+}
+
+// proceedToBackupOrInstall handles the transition from the last wizard screen to installation
+func (m Model) proceedToBackupOrInstall() (tea.Model, tea.Cmd) {
+	m.ExistingConfigs = system.DetectExistingConfigs()
+	if len(m.ExistingConfigs) > 0 {
+		m.Screen = ScreenBackupConfirm
+		m.Cursor = 0
+	} else {
+		m.SetupInstallSteps()
+		m.Screen = ScreenInstalling
+		m.CurrentStep = 0
+		return m, func() tea.Msg { return installStartMsg{} }
+	}
+	return m, nil
+}
+
+// aiToolIDMap maps AI tool option index to tool ID
+var aiToolIDMap = []string{"claude", "opencode", "gemini", "copilot"}
+
+// ModuleCategory groups related module items for the category drill-down UI
+type ModuleCategory struct {
+	ID       string       // Category identifier (e.g. "scripts")
+	Label    string       // Display name
+	Icon     string       // Emoji icon
+	Items    []ModuleItem // Individual selectable items
+	IsAtomic bool         // If true, selecting ANY sub-item sends the parent ID to the framework script
+}
+
+// ModuleItem represents a single selectable module within a category
+type ModuleItem struct {
+	ID    string // Module identifier sent to --modules flag
+	Label string // Display label in the TUI
+}
+
+// moduleCategories is the data-driven registry of all AI framework module categories.
+// Items mirror the real project-starter-framework repository structure.
+// setup-global.sh installs features at the category level (--features=hooks,skills,...).
+var moduleCategories = []ModuleCategory{
+	{
+		ID: "hooks", Label: "Hooks", Icon: "🪝",
+		Items: []ModuleItem{
+			{ID: "block-dangerous-commands", Label: "Block Dangerous Commands"},
+			{ID: "commit-guard", Label: "Commit Guard"},
+			{ID: "context-loader", Label: "Context Loader"},
+			{ID: "improve-prompt", Label: "Improve Prompt"},
+			{ID: "learning-log", Label: "Learning Log"},
+			{ID: "model-router", Label: "Model Router"},
+			{ID: "secret-scanner", Label: "Secret Scanner"},
+			{ID: "skill-validator", Label: "Skill Validator"},
+			{ID: "task-artifact", Label: "Task Artifact"},
+			{ID: "validate-workflow", Label: "Validate Workflow"},
+		},
+	},
+	{
+		ID: "commands", Label: "Commands", Icon: "⚡",
+		Items: []ModuleItem{
+			// Git
+			{ID: "git:changelog", Label: "Git: Changelog"},
+			{ID: "git:ci-local", Label: "Git: CI Local"},
+			{ID: "git:commit", Label: "Git: Commit"},
+			{ID: "git:fix-issue", Label: "Git: Fix Issue"},
+			{ID: "git:pr-create", Label: "Git: PR Create"},
+			{ID: "git:pr-review", Label: "Git: PR Review"},
+			{ID: "git:worktree", Label: "Git: Worktree"},
+			// Refactoring
+			{ID: "refactoring:cleanup", Label: "Refactoring: Cleanup"},
+			{ID: "refactoring:dead-code", Label: "Refactoring: Dead Code"},
+			{ID: "refactoring:extract", Label: "Refactoring: Extract"},
+			// Testing
+			{ID: "testing:e2e", Label: "Testing: E2E"},
+			{ID: "testing:tdd", Label: "Testing: TDD"},
+			{ID: "testing:test-coverage", Label: "Testing: Coverage"},
+			{ID: "testing:test-fix", Label: "Testing: Fix Tests"},
+			// Workflow
+			{ID: "workflow:generate-agents-md", Label: "Workflow: Generate Agents"},
+			{ID: "workflow:planning", Label: "Workflow: Planning"},
+			{ID: "workflows:compound", Label: "Workflows: Compound"},
+			{ID: "workflows:plan", Label: "Workflows: Plan"},
+			{ID: "workflows:review", Label: "Workflows: Review"},
+			{ID: "workflows:work", Label: "Workflows: Work"},
+		},
+	},
+	{
+		ID: "agents", Label: "Agents", Icon: "🤖",
+		Items: []ModuleItem{
+			// General
+			{ID: "orchestrator", Label: "General: Orchestrator"},
+			// Business
+			{ID: "business-api-designer", Label: "Business: API Designer"},
+			{ID: "business-business-analyst", Label: "Business: Business Analyst"},
+			{ID: "business-product-strategist", Label: "Business: Product Strategist"},
+			{ID: "business-project-manager", Label: "Business: Project Manager"},
+			{ID: "business-requirements-analyst", Label: "Business: Requirements Analyst"},
+			{ID: "business-technical-writer", Label: "Business: Technical Writer"},
+			// Creative
+			{ID: "creative-ux-designer", Label: "Creative: UX Designer"},
+			// Data & AI
+			{ID: "data-ai-ai-engineer", Label: "Data & AI: AI Engineer"},
+			{ID: "data-ai-analytics-engineer", Label: "Data & AI: Analytics Engineer"},
+			{ID: "data-ai-data-engineer", Label: "Data & AI: Data Engineer"},
+			{ID: "data-ai-data-scientist", Label: "Data & AI: Data Scientist"},
+			{ID: "data-ai-mlops-engineer", Label: "Data & AI: MLOps Engineer"},
+			{ID: "data-ai-prompt-engineer", Label: "Data & AI: Prompt Engineer"},
+			// Development
+			{ID: "development-angular-expert", Label: "Development: Angular Expert"},
+			{ID: "development-backend-architect", Label: "Development: Backend Architect"},
+			{ID: "development-database-specialist", Label: "Development: Database Specialist"},
+			{ID: "development-frontend-specialist", Label: "Development: Frontend Specialist"},
+			{ID: "development-fullstack-engineer", Label: "Development: Fullstack Engineer"},
+			{ID: "development-golang-pro", Label: "Development: Go Pro"},
+			{ID: "development-java-enterprise", Label: "Development: Java Enterprise"},
+			{ID: "development-javascript-pro", Label: "Development: JavaScript Pro"},
+			{ID: "development-nextjs-pro", Label: "Development: Next.js Pro"},
+			{ID: "development-python-pro", Label: "Development: Python Pro"},
+			{ID: "development-react-pro", Label: "Development: React Pro"},
+			{ID: "development-rust-pro", Label: "Development: Rust Pro"},
+			{ID: "development-spring-boot-4-expert", Label: "Development: Spring Boot 4"},
+			{ID: "development-typescript-pro", Label: "Development: TypeScript Pro"},
+			{ID: "development-vue-specialist", Label: "Development: Vue Specialist"},
+			// Infrastructure
+			{ID: "infrastructure-cloud-architect", Label: "Infrastructure: Cloud Architect"},
+			{ID: "infrastructure-deployment-manager", Label: "Infrastructure: Deployment Manager"},
+			{ID: "infrastructure-devops-engineer", Label: "Infrastructure: DevOps Engineer"},
+			{ID: "infrastructure-incident-responder", Label: "Infrastructure: Incident Responder"},
+			{ID: "infrastructure-kubernetes-expert", Label: "Infrastructure: Kubernetes Expert"},
+			{ID: "infrastructure-monitoring-specialist", Label: "Infrastructure: Monitoring Specialist"},
+			{ID: "infrastructure-performance-engineer", Label: "Infrastructure: Performance Engineer"},
+			// Quality
+			{ID: "quality-accessibility-auditor", Label: "Quality: Accessibility Auditor"},
+			{ID: "quality-code-reviewer-compact", Label: "Quality: Code Reviewer (Compact)"},
+			{ID: "quality-code-reviewer", Label: "Quality: Code Reviewer"},
+			{ID: "quality-dependency-manager", Label: "Quality: Dependency Manager"},
+			{ID: "quality-e2e-test-specialist", Label: "Quality: E2E Test Specialist"},
+			{ID: "quality-performance-tester", Label: "Quality: Performance Tester"},
+			{ID: "quality-security-auditor", Label: "Quality: Security Auditor"},
+			{ID: "quality-test-engineer", Label: "Quality: Test Engineer"},
+			// Specialists
+			{ID: "specialists-api-designer", Label: "Specialists: API Designer"},
+			{ID: "specialists-backend-architect", Label: "Specialists: Backend Architect"},
+			{ID: "specialists-code-reviewer", Label: "Specialists: Code Reviewer"},
+			{ID: "specialists-db-optimizer", Label: "Specialists: DB Optimizer"},
+			{ID: "specialists-devops-engineer", Label: "Specialists: DevOps Engineer"},
+			{ID: "specialists-documentation-writer", Label: "Specialists: Documentation Writer"},
+			{ID: "specialists-frontend-developer", Label: "Specialists: Frontend Developer"},
+			{ID: "specialists-performance-analyst", Label: "Specialists: Performance Analyst"},
+			{ID: "specialists-refactor-specialist", Label: "Specialists: Refactor Specialist"},
+			{ID: "specialists-security-auditor", Label: "Specialists: Security Auditor"},
+			{ID: "specialists-test-engineer", Label: "Specialists: Test Engineer"},
+			{ID: "specialists-ux-consultant", Label: "Specialists: UX Consultant"},
+			// Specialized
+			{ID: "specialized-agent-generator", Label: "Specialized: Agent Generator"},
+			{ID: "specialized-blockchain-developer", Label: "Specialized: Blockchain Developer"},
+			{ID: "specialized-code-migrator", Label: "Specialized: Code Migrator"},
+			{ID: "specialized-context-manager", Label: "Specialized: Context Manager"},
+			{ID: "specialized-documentation-writer", Label: "Specialized: Documentation Writer"},
+			{ID: "specialized-ecommerce-expert", Label: "Specialized: E-Commerce Expert"},
+			{ID: "specialized-embedded-engineer", Label: "Specialized: Embedded Engineer"},
+			{ID: "specialized-error-detective", Label: "Specialized: Error Detective"},
+			{ID: "specialized-fintech-specialist", Label: "Specialized: Fintech Specialist"},
+			{ID: "specialized-freelance-planner", Label: "Specialized: Freelance Planner"},
+			{ID: "specialized-freelance-planner-v2", Label: "Specialized: Freelance Planner v2"},
+			{ID: "specialized-freelance-planner-v3", Label: "Specialized: Freelance Planner v3"},
+			{ID: "specialized-freelance-planner-v4", Label: "Specialized: Freelance Planner v4"},
+			{ID: "specialized-game-developer", Label: "Specialized: Game Developer"},
+			{ID: "specialized-healthcare-dev", Label: "Specialized: Healthcare Dev"},
+			{ID: "specialized-mobile-developer", Label: "Specialized: Mobile Developer"},
+			{ID: "specialized-parallel-plan-executor", Label: "Specialized: Parallel Plan Executor"},
+			{ID: "specialized-plan-executor", Label: "Specialized: Plan Executor"},
+			{ID: "specialized-solo-dev-planner", Label: "Specialized: Solo Dev Planner"},
+			{ID: "specialized-template-writer", Label: "Specialized: Template Writer"},
+			{ID: "specialized-test-runner", Label: "Specialized: Test Runner"},
+			{ID: "specialized-vibekanban-worker", Label: "Specialized: VibeKanban Worker"},
+			{ID: "specialized-wave-executor", Label: "Specialized: Wave Executor"},
+			{ID: "specialized-workflow-optimizer", Label: "Specialized: Workflow Optimizer"},
+		},
+	},
+	{
+		ID: "skills", Label: "Skills", Icon: "🎯",
+		Items: []ModuleItem{
+			// Backend (21)
+			{ID: "backend-api-gateway", Label: "Backend: API Gateway"},
+			{ID: "backend-bff-concepts", Label: "Backend: BFF Concepts"},
+			{ID: "backend-bff-spring", Label: "Backend: BFF Spring"},
+			{ID: "backend-chi-router", Label: "Backend: Chi Router"},
+			{ID: "backend-error-handling", Label: "Backend: Error Handling"},
+			{ID: "backend-exceptions-spring", Label: "Backend: Exceptions Spring"},
+			{ID: "backend-fastapi", Label: "Backend: FastAPI"},
+			{ID: "backend-gateway-spring", Label: "Backend: Gateway Spring"},
+			{ID: "backend-go-backend", Label: "Backend: Go Backend"},
+			{ID: "backend-gradle-multimodule", Label: "Backend: Gradle Multi-Module"},
+			{ID: "backend-graphql-concepts", Label: "Backend: GraphQL Concepts"},
+			{ID: "backend-graphql-spring", Label: "Backend: GraphQL Spring"},
+			{ID: "backend-grpc-concepts", Label: "Backend: gRPC Concepts"},
+			{ID: "backend-grpc-spring", Label: "Backend: gRPC Spring"},
+			{ID: "backend-jwt-auth", Label: "Backend: JWT Auth"},
+			{ID: "backend-notifications-concepts", Label: "Backend: Notifications"},
+			{ID: "backend-recommendations-concepts", Label: "Backend: Recommendations"},
+			{ID: "backend-search-concepts", Label: "Backend: Search Concepts"},
+			{ID: "backend-search-spring", Label: "Backend: Search Spring"},
+			{ID: "backend-spring-boot-4", Label: "Backend: Spring Boot 4"},
+			{ID: "backend-websockets", Label: "Backend: WebSockets"},
+			// Data & AI (11)
+			{ID: "data-ai-ai-ml", Label: "Data & AI: AI/ML"},
+			{ID: "data-ai-analytics-concepts", Label: "Data & AI: Analytics Concepts"},
+			{ID: "data-ai-analytics-spring", Label: "Data & AI: Analytics Spring"},
+			{ID: "data-ai-duckdb-analytics", Label: "Data & AI: DuckDB Analytics"},
+			{ID: "data-ai-langchain", Label: "Data & AI: LangChain"},
+			{ID: "data-ai-mlflow", Label: "Data & AI: MLflow"},
+			{ID: "data-ai-onnx-inference", Label: "Data & AI: ONNX Inference"},
+			{ID: "data-ai-powerbi", Label: "Data & AI: Power BI"},
+			{ID: "data-ai-pytorch", Label: "Data & AI: PyTorch"},
+			{ID: "data-ai-scikit-learn", Label: "Data & AI: scikit-learn"},
+			{ID: "data-ai-vector-db", Label: "Data & AI: Vector DB"},
+			// Database (6)
+			{ID: "database-graph-databases", Label: "Database: Graph Databases"},
+			{ID: "database-graph-spring", Label: "Database: Graph Spring"},
+			{ID: "database-pgx-postgres", Label: "Database: PGX Postgres"},
+			{ID: "database-redis-cache", Label: "Database: Redis Cache"},
+			{ID: "database-sqlite-embedded", Label: "Database: SQLite Embedded"},
+			{ID: "database-timescaledb", Label: "Database: TimescaleDB"},
+			// Docs (4)
+			{ID: "docs-api-documentation", Label: "Docs: API Documentation"},
+			{ID: "docs-docs-spring", Label: "Docs: Spring Docs"},
+			{ID: "docs-mustache-templates", Label: "Docs: Mustache Templates"},
+			{ID: "docs-technical-docs", Label: "Docs: Technical Docs"},
+			// Frontend (7)
+			{ID: "frontend-astro-ssr", Label: "Frontend: Astro SSR"},
+			{ID: "frontend-frontend-design", Label: "Frontend: Design Patterns"},
+			{ID: "frontend-frontend-web", Label: "Frontend: Web Development"},
+			{ID: "frontend-mantine-ui", Label: "Frontend: Mantine UI"},
+			{ID: "frontend-tanstack-query", Label: "Frontend: TanStack Query"},
+			{ID: "frontend-zod-validation", Label: "Frontend: Zod Validation"},
+			{ID: "frontend-zustand-state", Label: "Frontend: Zustand State"},
+			// Infrastructure (8)
+			{ID: "infra-chaos-engineering", Label: "Infrastructure: Chaos Engineering"},
+			{ID: "infra-chaos-spring", Label: "Infrastructure: Chaos Spring"},
+			{ID: "infra-devops-infra", Label: "Infrastructure: DevOps"},
+			{ID: "infra-docker-containers", Label: "Infrastructure: Docker"},
+			{ID: "infra-kubernetes", Label: "Infrastructure: Kubernetes"},
+			{ID: "infra-opentelemetry", Label: "Infrastructure: OpenTelemetry"},
+			{ID: "infra-traefik-proxy", Label: "Infrastructure: Traefik Proxy"},
+			{ID: "infra-woodpecker-ci", Label: "Infrastructure: Woodpecker CI"},
+			// Mobile (2)
+			{ID: "mobile-ionic-capacitor", Label: "Mobile: Ionic Capacitor"},
+			{ID: "mobile-mobile-ionic", Label: "Mobile: Mobile Ionic"},
+			// Prompt & Quality (2)
+			{ID: "prompt-improver", Label: "Prompt: Prompt Improver"},
+			{ID: "quality-ghagga-review", Label: "Quality: Ghagga Review"},
+			// References (5)
+			{ID: "references-hooks-patterns", Label: "References: Hooks Patterns"},
+			{ID: "references-mcp-servers", Label: "References: MCP Servers"},
+			{ID: "references-plugins-reference", Label: "References: Plugins Reference"},
+			{ID: "references-skills-reference", Label: "References: Skills Reference"},
+			{ID: "references-subagent-templates", Label: "References: Subagent Templates"},
+			// Systems & IoT (4)
+			{ID: "systems-modbus-protocol", Label: "Systems: Modbus Protocol"},
+			{ID: "systems-mqtt-rumqttc", Label: "Systems: MQTT rumqttc"},
+			{ID: "systems-rust-systems", Label: "Systems: Rust Systems"},
+			{ID: "systems-tokio-async", Label: "Systems: Tokio Async"},
+			// Testing (3)
+			{ID: "testing-playwright-e2e", Label: "Testing: Playwright E2E"},
+			{ID: "testing-testcontainers", Label: "Testing: Testcontainers"},
+			{ID: "testing-vitest-testing", Label: "Testing: Vitest Testing"},
+			// Workflow (12)
+			{ID: "workflow-ci-local-guide", Label: "Workflow: CI Local Guide"},
+			{ID: "workflow-claude-automation", Label: "Workflow: Claude Automation"},
+			{ID: "workflow-claude-md-improver", Label: "Workflow: CLAUDE.md Improver"},
+			{ID: "workflow-finish-dev-branch", Label: "Workflow: Finish Dev Branch"},
+			{ID: "workflow-git-github", Label: "Workflow: Git & GitHub"},
+			{ID: "workflow-git-workflow", Label: "Workflow: Git Workflow"},
+			{ID: "workflow-ide-plugins", Label: "Workflow: IDE Plugins"},
+			{ID: "workflow-ide-plugins-intellij", Label: "Workflow: IDE Plugins IntelliJ"},
+			{ID: "workflow-obsidian-brain", Label: "Workflow: Obsidian Brain"},
+			{ID: "workflow-git-worktrees", Label: "Workflow: Git Worktrees"},
+			{ID: "workflow-verification", Label: "Workflow: Verification"},
+			{ID: "workflow-wave-workflow", Label: "Workflow: Wave Workflow"},
+		},
+	},
+	{
+		ID: "sdd", Label: "SDD (Spec-Driven Development)", Icon: "📐", IsAtomic: false,
+		Items: []ModuleItem{
+			{ID: "sdd-openspec", Label: "OpenSpec (project-starter-framework)"},
+			{ID: "sdd-agent-teams", Label: "Agent Teams Lite"},
+		},
+	},
+	{
+		ID: "mcp", Label: "MCP Servers", Icon: "🔌", IsAtomic: true,
+		Items: []ModuleItem{
+			{ID: "mcp-context7", Label: "Context7"},
+			{ID: "mcp-engram", Label: "Engram"},
+			{ID: "mcp-jira", Label: "Jira"},
+			{ID: "mcp-atlassian", Label: "Atlassian"},
+			{ID: "mcp-figma", Label: "Figma"},
+			{ID: "mcp-notion", Label: "Notion"},
+		},
+	},
+}
+
+// collectSelectedFeatures converts the category selection map into feature flags for setup-global.sh.
+// If ANY item within a category is selected, the category's feature flag is included.
+// setup-global.sh operates at the feature level: --features=hooks,skills,agents,sdd,mcp
+// Special case: SDD category — only "sdd-openspec" maps to "sdd" feature.
+// "sdd-agent-teams" is handled separately (different repo/installer).
+func collectSelectedFeatures(sel map[string][]bool) []string {
+	var features []string
+	for _, cat := range moduleCategories {
+		bools, ok := sel[cat.ID]
+		if !ok {
+			continue
+		}
+		// SDD category: only include "sdd" feature if OpenSpec is selected
+		if cat.ID == "sdd" {
+			for i, b := range bools {
+				if b && i < len(cat.Items) && cat.Items[i].ID == "sdd-openspec" {
+					features = append(features, "sdd")
+					break
+				}
+			}
+			continue
+		}
+		for _, b := range bools {
+			if b {
+				features = append(features, cat.ID)
+				break
+			}
+		}
+	}
+	return features
+}
+
+// isAgentTeamsLiteSelected checks if "Agent Teams Lite" is selected in the SDD category.
+func isAgentTeamsLiteSelected(sel map[string][]bool) bool {
+	bools, ok := sel["sdd"]
+	if !ok {
+		return false
+	}
+	for _, cat := range moduleCategories {
+		if cat.ID != "sdd" {
+			continue
+		}
+		for i, b := range bools {
+			if b && i < len(cat.Items) && cat.Items[i].ID == "sdd-agent-teams" {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func (m Model) handleAIToolsKeys(key string) (tea.Model, tea.Cmd) {
+	options := m.GetCurrentOptions()
+	lastToolIdx := len(aiToolIDMap) - 1 // Last toggleable tool index
+	confirmIdx := len(options) - 1      // "Confirm selection" is last option
+
+	switch key {
+	case "up", "k":
+		if m.Cursor > 0 {
+			m.Cursor--
+			// Skip separator
+			if strings.HasPrefix(options[m.Cursor], "───") && m.Cursor > 0 {
+				m.Cursor--
+			}
+		}
+	case "down", "j":
+		if m.Cursor < len(options)-1 {
+			m.Cursor++
+			if strings.HasPrefix(options[m.Cursor], "───") && m.Cursor < len(options)-1 {
+				m.Cursor++
+			}
+		}
+	case "enter", " ":
+		if m.Cursor <= lastToolIdx {
+			// Toggle tool selection
+			if m.AIToolSelected != nil && m.Cursor < len(m.AIToolSelected) {
+				m.AIToolSelected[m.Cursor] = !m.AIToolSelected[m.Cursor]
+			}
+		} else if m.Cursor == confirmIdx {
+			// Confirm — collect selected tools
+			var selected []string
+			for i, sel := range m.AIToolSelected {
+				if sel && i < len(aiToolIDMap) {
+					selected = append(selected, aiToolIDMap[i])
+				}
+			}
+			m.Choices.AITools = selected
+			// If any AI tools selected, ask about framework
+			if len(m.Choices.AITools) > 0 {
+				m.Screen = ScreenAIFrameworkConfirm
+				m.Cursor = 0
+			} else {
+				// No AI tools, skip framework too
+				m.Choices.InstallAIFramework = false
+				return m.proceedToBackupOrInstall()
+			}
+		}
+	case "esc", "backspace":
+		return m.goBackInstallStep()
+	}
+
+	return m, nil
+}
+
+func (m Model) handleAICategoriesKeys(key string) (tea.Model, tea.Cmd) {
+	options := m.GetCurrentOptions()
+	lastCategoryIdx := len(moduleCategories) - 1
+	confirmIdx := len(options) - 1
+
+	switch key {
+	case "up", "k":
+		if m.Cursor > 0 {
+			m.Cursor--
+			if strings.HasPrefix(options[m.Cursor], "───") && m.Cursor > 0 {
+				m.Cursor--
+			}
+		}
+	case "down", "j":
+		if m.Cursor < len(options)-1 {
+			m.Cursor++
+			if strings.HasPrefix(options[m.Cursor], "───") && m.Cursor < len(options)-1 {
+				m.Cursor++
+			}
+		}
+	case "enter", " ":
+		if m.Cursor <= lastCategoryIdx {
+			// Drill into category
+			m.SelectedModuleCategory = m.Cursor
+			m.Screen = ScreenAIFrameworkCategoryItems
+			m.Cursor = 0
+			m.CategoryItemsScroll = 0
+		} else if m.Cursor == confirmIdx {
+			// Confirm — collect selected features for setup-global.sh
+			m.Choices.AIFrameworkModules = collectSelectedFeatures(m.AICategorySelected)
+			// Check if Agent Teams Lite is selected in SDD category
+			m.Choices.InstallAgentTeamsLite = isAgentTeamsLiteSelected(m.AICategorySelected)
+			if len(m.Choices.AIFrameworkModules) == 0 && !m.Choices.InstallAgentTeamsLite {
+				m.Choices.InstallAIFramework = false
+			}
+			return m.proceedToBackupOrInstall()
+		}
+	case "esc", "backspace":
+		return m.goBackInstallStep()
+	}
+
+	return m, nil
+}
+
+func (m Model) handleAICategoryItemsKeys(key string) (tea.Model, tea.Cmd) {
+	if m.SelectedModuleCategory < 0 || m.SelectedModuleCategory >= len(moduleCategories) {
+		return m, nil
+	}
+	cat := moduleCategories[m.SelectedModuleCategory]
+	options := m.GetCurrentOptions()
+	lastItemIdx := len(cat.Items) - 1
+	backIdx := len(options) - 1
+
+	switch key {
+	case "up", "k":
+		if m.Cursor > 0 {
+			m.Cursor--
+			if strings.HasPrefix(options[m.Cursor], "───") && m.Cursor > 0 {
+				m.Cursor--
+			}
+		}
+	case "down", "j":
+		if m.Cursor < len(options)-1 {
+			m.Cursor++
+			if strings.HasPrefix(options[m.Cursor], "───") && m.Cursor < len(options)-1 {
+				m.Cursor++
+			}
+		}
+	case "enter", " ":
+		if m.Cursor <= lastItemIdx {
+			// Toggle item within category
+			bools := m.AICategorySelected[cat.ID]
+			if bools != nil && m.Cursor < len(bools) {
+				bools[m.Cursor] = !bools[m.Cursor]
+				m.AICategorySelected[cat.ID] = bools
+			}
+		} else if m.Cursor == backIdx {
+			// Back to categories — restore cursor to this category
+			m.Screen = ScreenAIFrameworkCategories
+			m.Cursor = m.SelectedModuleCategory
+			m.CategoryItemsScroll = 0
+		}
+	case "esc", "backspace":
+		// Back to categories — restore cursor to this category
+		m.Screen = ScreenAIFrameworkCategories
+		m.Cursor = m.SelectedModuleCategory
+		m.CategoryItemsScroll = 0
+	}
+
+	// Keep scroll in sync with cursor (viewport follows cursor)
+	visibleItems := m.Height - 8
+	if visibleItems < 5 {
+		visibleItems = 5
+	}
+	if m.Cursor < m.CategoryItemsScroll {
+		m.CategoryItemsScroll = m.Cursor
+	}
+	if m.Cursor >= m.CategoryItemsScroll+visibleItems {
+		m.CategoryItemsScroll = m.Cursor - visibleItems + 1
 	}
 
 	return m, nil
@@ -1196,8 +1770,17 @@ func (m Model) handleBackupConfirmKeys(key string) (tea.Model, tea.Cmd) {
 			m.Choices = UserChoices{}
 		}
 	case "esc", "backspace":
-		// Go back to Nvim selection
-		m.Screen = ScreenNvimSelect
+		// Go back to the last AI screen in the wizard flow
+		if len(m.Choices.AITools) > 0 && m.Choices.InstallAIFramework && m.AICategorySelected != nil {
+			// Was in custom mode — go back to categories
+			m.Screen = ScreenAIFrameworkCategories
+		} else if len(m.Choices.AITools) > 0 && m.Choices.InstallAIFramework {
+			m.Screen = ScreenAIFrameworkPreset
+		} else if len(m.Choices.AITools) > 0 {
+			m.Screen = ScreenAIFrameworkConfirm
+		} else {
+			m.Screen = ScreenAIToolsSelect
+		}
 		m.Cursor = 0
 	}
 

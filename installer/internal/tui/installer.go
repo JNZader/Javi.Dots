@@ -65,6 +65,10 @@ func executeStep(stepID string, m *Model) error {
 		return stepInstallWM(m)
 	case "nvim":
 		return stepInstallNvim(m)
+	case "aitools":
+		return stepInstallAITools(m)
+	case "aiframework":
+		return stepInstallAIFramework(m)
 	case "cleanup":
 		return stepCleanup(m)
 	case "setshell":
@@ -1039,45 +1043,53 @@ func stepInstallNvim(m *Model) error {
 			err)
 	}
 
-	// Install Claude Code (optional, don't fail on error)
-	// Skip on Termux - Claude Code doesn't support Android
-	if !m.SystemInfo.IsTermux {
-		SendLog(stepID, "Installing Claude Code (optional)...")
+	SendLog(stepID, "✓ Neovim configured with Gentleman setup")
+	return nil
+}
+
+// hasAITool checks if a tool is in the selected AI tools list
+func hasAITool(tools []string, name string) bool {
+	for _, t := range tools {
+		if t == name {
+			return true
+		}
+	}
+	return false
+}
+
+func stepInstallAITools(m *Model) error {
+	homeDir := os.Getenv("HOME")
+	repoDir := "Gentleman.Dots"
+	stepID := "aitools"
+
+	// Install and configure Claude Code
+	if hasAITool(m.Choices.AITools, "claude") {
+		SendLog(stepID, "Installing Claude Code...")
 		system.RunWithLogs(`curl -fsSL https://claude.ai/install.sh | bash`, nil, func(line string) {
 			SendLog(stepID, line)
 		})
-	} else {
-		SendLog(stepID, "Skipping Claude Code (not supported on Termux)")
-	}
 
-	// Configure Claude Code
-	SendLog(stepID, "Configuring Claude Code...")
-	claudeDir := filepath.Join(homeDir, ".claude")
-	system.EnsureDir(claudeDir)
-	system.EnsureDir(filepath.Join(claudeDir, "output-styles"))
-	system.EnsureDir(filepath.Join(claudeDir, "skills"))
-	system.CopyFile(filepath.Join(repoDir, "GentlemanClaude/CLAUDE.md"), filepath.Join(claudeDir, "CLAUDE.md"))
-	system.CopyFile(filepath.Join(repoDir, "GentlemanClaude/settings.json"), filepath.Join(claudeDir, "settings.json"))
-	system.CopyFile(filepath.Join(repoDir, "GentlemanClaude/statusline.sh"), filepath.Join(claudeDir, "statusline.sh"))
-	system.Run(fmt.Sprintf("chmod +x %s", filepath.Join(claudeDir, "statusline.sh")), nil)
-	system.CopyFile(filepath.Join(repoDir, "GentlemanClaude/output-styles/gentleman.md"), filepath.Join(claudeDir, "output-styles/gentleman.md"))
-	system.CopyFile(filepath.Join(repoDir, "GentlemanClaude/mcp-servers.template.json"), filepath.Join(claudeDir, "mcp-servers.template.json"))
-	system.CopyFile(filepath.Join(repoDir, "GentlemanClaude/tweakcc-theme.json"), filepath.Join(claudeDir, "tweakcc-theme.json"))
-	// Copy skills (excluding prowler-* which are work-specific)
-	skillsToCopy := []string{"ai-sdk-5", "django-drf", "nextjs-15", "playwright", "pytest", "react-19", "tailwind-4", "typescript", "zod-4", "zustand-5"}
-	for _, skill := range skillsToCopy {
-		skillSrc := filepath.Join(repoDir, "GentlemanClaude/skills", skill)
-		skillDst := filepath.Join(claudeDir, "skills", skill)
-		system.EnsureDir(skillDst)
-		system.CopyFile(filepath.Join(skillSrc, "SKILL.md"), filepath.Join(skillDst, "SKILL.md"))
-	}
-	SendLog(stepID, "⚙️ Copied CLAUDE.md")
-	SendLog(stepID, "📊 Copied statusline.sh")
-	SendLog(stepID, "🎨 Copied output styles")
-	SendLog(stepID, "🧠 Copied Claude skills")
+		SendLog(stepID, "Configuring Claude Code...")
+		claudeDir := filepath.Join(homeDir, ".claude")
+		system.EnsureDir(claudeDir)
+		system.EnsureDir(filepath.Join(claudeDir, "output-styles"))
+		system.EnsureDir(filepath.Join(claudeDir, "skills"))
+		system.CopyFile(filepath.Join(repoDir, "GentlemanClaude/CLAUDE.md"), filepath.Join(claudeDir, "CLAUDE.md"))
+		system.CopyFile(filepath.Join(repoDir, "GentlemanClaude/settings.json"), filepath.Join(claudeDir, "settings.json"))
+		system.CopyFile(filepath.Join(repoDir, "GentlemanClaude/statusline.sh"), filepath.Join(claudeDir, "statusline.sh"))
+		system.Run(fmt.Sprintf("chmod +x %s", filepath.Join(claudeDir, "statusline.sh")), nil)
+		system.CopyFile(filepath.Join(repoDir, "GentlemanClaude/output-styles/gentleman.md"), filepath.Join(claudeDir, "output-styles/gentleman.md"))
+		system.CopyFile(filepath.Join(repoDir, "GentlemanClaude/mcp-servers.template.json"), filepath.Join(claudeDir, "mcp-servers.template.json"))
+		system.CopyFile(filepath.Join(repoDir, "GentlemanClaude/tweakcc-theme.json"), filepath.Join(claudeDir, "tweakcc-theme.json"))
+		skillsToCopy := []string{"ai-sdk-5", "django-drf", "nextjs-15", "playwright", "pytest", "react-19", "tailwind-4", "typescript", "zod-4", "zustand-5"}
+		for _, skill := range skillsToCopy {
+			skillSrc := filepath.Join(repoDir, "GentlemanClaude/skills", skill)
+			skillDst := filepath.Join(claudeDir, "skills", skill)
+			system.EnsureDir(skillDst)
+			system.CopyFile(filepath.Join(skillSrc, "SKILL.md"), filepath.Join(skillDst, "SKILL.md"))
+		}
+		SendLog(stepID, "⚙️ Copied CLAUDE.md, statusline, output styles, skills")
 
-	// Apply tweakcc theme (only if Claude Code was installed)
-	if !m.SystemInfo.IsTermux {
 		SendLog(stepID, "Applying tweakcc theme...")
 		result := system.Run("npx tweakcc --apply", nil)
 		if result.Error == nil {
@@ -1087,29 +1099,198 @@ func stepInstallNvim(m *Model) error {
 		}
 	}
 
-	// Install OpenCode (optional, don't fail on error)
-	// Skip on Termux - OpenCode doesn't support Android
-	if !m.SystemInfo.IsTermux {
-		SendLog(stepID, "Installing OpenCode (optional)...")
+	// Install and configure OpenCode
+	if hasAITool(m.Choices.AITools, "opencode") {
+		SendLog(stepID, "Installing OpenCode...")
 		system.RunWithLogs(`curl -fsSL https://opencode.ai/install | bash`, nil, func(line string) {
 			SendLog(stepID, line)
 		})
-	} else {
-		SendLog(stepID, "Skipping OpenCode (not supported on Termux)")
+
+		SendLog(stepID, "Configuring OpenCode...")
+		openCodeDir := filepath.Join(homeDir, ".config/opencode")
+		system.EnsureDir(openCodeDir)
+		system.EnsureDir(filepath.Join(openCodeDir, "themes"))
+		system.EnsureDir(filepath.Join(openCodeDir, "skill"))
+		system.CopyFile(filepath.Join(repoDir, "GentlemanOpenCode/opencode.json"), filepath.Join(openCodeDir, "opencode.json"))
+		system.CopyFile(filepath.Join(repoDir, "GentlemanOpenCode/themes/gentleman.json"), filepath.Join(openCodeDir, "themes/gentleman.json"))
+		system.CopyDir(filepath.Join(repoDir, "GentlemanOpenCode", "skill"), filepath.Join(openCodeDir, "skill"))
+		SendLog(stepID, "🧠 Copied OpenCode config and skills")
 	}
 
-	// Configure OpenCode
-	SendLog(stepID, "Configuring OpenCode...")
-	openCodeDir := filepath.Join(homeDir, ".config/opencode")
-	system.EnsureDir(openCodeDir)
-	system.EnsureDir(filepath.Join(openCodeDir, "themes"))
-	system.EnsureDir(filepath.Join(openCodeDir, "skill"))
-	system.CopyFile(filepath.Join(repoDir, "GentlemanOpenCode/opencode.json"), filepath.Join(openCodeDir, "opencode.json"))
-	system.CopyFile(filepath.Join(repoDir, "GentlemanOpenCode/themes/gentleman.json"), filepath.Join(openCodeDir, "themes/gentleman.json"))
-	system.CopyDir(filepath.Join(repoDir, "GentlemanOpenCode", "skill"), filepath.Join(openCodeDir, "skill"))
-	SendLog(stepID, "🧠 Copied OpenCode skills")
+	// Install Gemini CLI
+	if hasAITool(m.Choices.AITools, "gemini") {
+		SendLog(stepID, "Installing Gemini CLI...")
+		result := system.RunWithLogs(`npm install -g @google/gemini-cli`, nil, func(line string) {
+			SendLog(stepID, line)
+		})
+		if result.Error != nil {
+			SendLog(stepID, "⚠️ Could not install Gemini CLI (run 'npm install -g @google/gemini-cli' manually)")
+		} else {
+			SendLog(stepID, "✓ Gemini CLI installed")
+		}
+	}
 
-	SendLog(stepID, "✓ Neovim configured with Gentleman setup")
+	// Install GitHub Copilot CLI extension
+	if hasAITool(m.Choices.AITools, "copilot") {
+		SendLog(stepID, "Installing GitHub Copilot CLI...")
+		result := system.RunWithLogs(`gh extension install github/gh-copilot`, nil, func(line string) {
+			SendLog(stepID, line)
+		})
+		if result.Error != nil {
+			SendLog(stepID, "⚠️ Could not install GitHub Copilot (run 'gh extension install github/gh-copilot' manually)")
+		} else {
+			SendLog(stepID, "✓ GitHub Copilot CLI installed")
+		}
+	}
+
+	SendLog(stepID, "✓ AI tools configured")
+	return nil
+}
+
+func stepInstallAIFramework(m *Model) error {
+	stepID := "aiframework"
+
+	// Determine which features to install via setup-global.sh
+	var features []string
+	if m.Choices.AIFrameworkPreset != "" {
+		// Map presets to feature combinations
+		presetFeatures := map[string][]string{
+			"minimal":   {"hooks", "commands", "sdd"},
+			"frontend":  {"hooks", "commands", "skills", "agents", "sdd"},
+			"backend":   {"hooks", "commands", "skills", "agents", "sdd"},
+			"fullstack": {"hooks", "commands", "skills", "agents", "sdd", "mcp"},
+			"data":      {"hooks", "commands", "skills", "agents", "sdd", "mcp"},
+			"complete":  {"hooks", "commands", "skills", "agents", "sdd", "mcp"},
+		}
+		if f, ok := presetFeatures[m.Choices.AIFrameworkPreset]; ok {
+			features = f
+		} else {
+			features = []string{"hooks", "commands", "skills", "agents", "sdd", "mcp"}
+		}
+	} else if len(m.Choices.AIFrameworkModules) > 0 {
+		// Custom selection — already feature-level IDs from collectSelectedFeatures
+		features = m.Choices.AIFrameworkModules
+	}
+
+	// Run project-starter-framework setup if there are features to install
+	if len(features) > 0 {
+		// Clean up any leftover clone from a previous failed run
+		system.Run("rm -rf /tmp/project-starter-framework-install", nil)
+
+		SendLog(stepID, "Cloning project-starter-framework...")
+		result := system.RunWithLogs(
+			"git clone --depth 1 https://github.com/JNZader/project-starter-framework.git /tmp/project-starter-framework-install",
+			nil, func(line string) { SendLog(stepID, line) },
+		)
+		if result.Error != nil {
+			return wrapStepError("aiframework", "Install AI Framework",
+				"Failed to clone project-starter-framework", result.Error)
+		}
+
+		// Build the setup-global.sh command
+		setupCmd := "/tmp/project-starter-framework-install/scripts/setup-global.sh --auto --skip-install"
+
+		// Determine which CLIs to configure based on selected AI tools
+		var clis []string
+		if hasAITool(m.Choices.AITools, "claude") {
+			clis = append(clis, "claude")
+		}
+		if hasAITool(m.Choices.AITools, "opencode") {
+			clis = append(clis, "opencode")
+		}
+		if hasAITool(m.Choices.AITools, "gemini") {
+			clis = append(clis, "gemini")
+		}
+		if hasAITool(m.Choices.AITools, "copilot") {
+			clis = append(clis, "copilot")
+		}
+		if len(clis) > 0 {
+			setupCmd += " --clis=" + strings.Join(clis, ",")
+		}
+
+		setupCmd += " --features=" + strings.Join(features, ",")
+
+		SendLog(stepID, "Running framework setup...")
+		SendLog(stepID, fmt.Sprintf("Command: %s", setupCmd))
+		result = system.RunWithLogs(setupCmd, nil, func(line string) {
+			SendLog(stepID, line)
+		})
+		if result.Error != nil {
+			return wrapStepError("aiframework", "Install AI Framework",
+				"Framework setup failed", result.Error)
+		}
+
+		// Cleanup cloned framework repo
+		system.Run("rm -rf /tmp/project-starter-framework-install", nil)
+
+		SendLog(stepID, "✓ AI framework configured")
+	}
+
+	// Install Agent Teams Lite if selected (separate SDD framework)
+	if m.Choices.InstallAgentTeamsLite {
+		SendLog(stepID, "Installing Agent Teams Lite...")
+		if err := installAgentTeamsLite(m); err != nil {
+			SendLog(stepID, fmt.Sprintf("⚠️ Agent Teams Lite failed: %v (you can install manually)", err))
+		} else {
+			SendLog(stepID, "✓ Agent Teams Lite installed")
+		}
+	}
+
+	return nil
+}
+
+// installAgentTeamsLite clones the agent-teams-lite repo and runs install.sh for each selected AI tool.
+func installAgentTeamsLite(m *Model) error {
+	const repoURL = "https://github.com/Gentleman-Programming/agent-teams-lite.git"
+	const clonePath = "/tmp/agent-teams-lite-install"
+	stepID := "aiframework"
+
+	// Cleanup any leftover
+	system.Run("rm -rf "+clonePath, nil)
+
+	SendLog(stepID, "Cloning agent-teams-lite...")
+	result := system.RunWithLogs(
+		"git clone --depth 1 "+repoURL+" "+clonePath,
+		nil, func(line string) { SendLog(stepID, line) },
+	)
+	if result.Error != nil {
+		return fmt.Errorf("failed to clone agent-teams-lite: %w", result.Error)
+	}
+
+	// Make install script executable
+	system.Run("chmod +x "+clonePath+"/scripts/install.sh", nil)
+
+	// Map our AI tool IDs to agent-teams-lite agent names
+	agentMap := map[string]string{
+		"claude":  "claude-code",
+		"opencode": "opencode",
+		"gemini":  "gemini-cli",
+	}
+
+	installed := 0
+	for _, tool := range m.Choices.AITools {
+		agentName, ok := agentMap[tool]
+		if !ok {
+			continue
+		}
+		SendLog(stepID, fmt.Sprintf("Installing Agent Teams Lite for %s...", agentName))
+		installCmd := fmt.Sprintf("%s/scripts/install.sh --agent %s", clonePath, agentName)
+		result = system.RunWithLogs(installCmd, nil, func(line string) {
+			SendLog(stepID, line)
+		})
+		if result.Error != nil {
+			SendLog(stepID, fmt.Sprintf("⚠️ Agent Teams Lite install failed for %s", agentName))
+		} else {
+			installed++
+		}
+	}
+
+	// Cleanup
+	system.Run("rm -rf "+clonePath, nil)
+
+	if installed == 0 {
+		return fmt.Errorf("no AI tools could be configured with Agent Teams Lite")
+	}
 	return nil
 }
 

@@ -3,6 +3,7 @@ package tui
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/Gentleman-Programming/Gentleman.Dots/installer/internal/system"
 	"github.com/Gentleman-Programming/Gentleman.Dots/installer/internal/tui/trainer"
@@ -47,6 +48,12 @@ const (
 	ScreenBackupConfirm
 	ScreenRestoreBackup
 	ScreenRestoreConfirm
+	// AI Framework screens
+	ScreenAIToolsSelect      // Select which AI coding tools to install
+	ScreenAIFrameworkConfirm // Confirm AI framework installation
+	ScreenAIFrameworkPreset  // Select framework preset (minimal, frontend, etc.)
+	ScreenAIFrameworkCategories  // Select module category to drill into
+	ScreenAIFrameworkCategoryItems // Select individual items within a category
 	// Warning screens
 	ScreenGhosttyWarning // Warning about Ghostty compatibility on Debian/Ubuntu
 	// Vim Trainer screens
@@ -88,6 +95,12 @@ type UserChoices struct {
 	WindowMgr    string // "tmux", "zellij", "none"
 	InstallNvim  bool
 	CreateBackup bool // Whether to backup existing configs
+	// AI Tools and Framework
+	AITools              []string // Selected AI tools: "claude", "opencode"
+	InstallAIFramework   bool     // Whether to install project-starter-framework
+	AIFrameworkPreset    string   // Preset: "minimal", "frontend", "backend", "fullstack", "data", "complete"
+	AIFrameworkModules   []string // Individual module names when preset is "custom"
+	InstallAgentTeamsLite bool    // Whether to install agent-teams-lite SDD framework
 }
 
 // Model is the main application state
@@ -143,6 +156,12 @@ type Model struct {
 	TrainerInput       string               // User's input for current exercise
 	TrainerLastCorrect bool                 // Was last answer correct
 	TrainerMessage     string               // Feedback message to display
+	// AI Tools multi-select toggle
+	AIToolSelected []bool // Toggle state for each tool in ScreenAIToolsSelect
+	// AI Framework category drill-down selection
+	AICategorySelected     map[string][]bool // Toggle state per category: categoryID → []bool for items
+	SelectedModuleCategory int               // Index into moduleCategories for current drill-down
+	CategoryItemsScroll    int               // Scroll offset for long item lists in category drill-down
 	// Leader key mode (like Vim's <space> leader)
 	LeaderMode bool // True when waiting for next key after <space>
 }
@@ -286,6 +305,51 @@ func (m Model) GetCurrentOptions() []string {
 		return []string{"Tmux", "Zellij", "None", "─────────────", "ℹ️  Learn about multiplexers"}
 	case ScreenNvimSelect:
 		return []string{"Yes, install Neovim with config", "No, skip Neovim", "─────────────", "ℹ️  Learn about Neovim", "⌨️  View Keymaps", "📖 LazyVim Guide"}
+	case ScreenAIToolsSelect:
+		return []string{"Claude Code", "OpenCode", "Gemini CLI", "GitHub Copilot", "─────────────", "✅ Confirm selection"}
+	case ScreenAIFrameworkConfirm:
+		return []string{"Yes, install AI Framework", "No, skip framework"}
+	case ScreenAIFrameworkPreset:
+		return []string{
+			"🔧 Custom — Pick individual modules",
+			"─────────────",
+			"🎯 Minimal — Core + git commands only",
+			"🖥️  Frontend — React, Vue, Angular, testing, security hooks",
+			"⚙️  Backend — APIs, databases, microservices, security hooks",
+			"🔄 Fullstack — Frontend + Backend + infra + all commands",
+			"📊 Data — Data engineering, ML/AI, analytics",
+			"📦 Complete — Everything included",
+		}
+	case ScreenAIFrameworkCategories:
+		opts := make([]string, 0, len(moduleCategories)+2)
+		for i, cat := range moduleCategories {
+			selected := 0
+			total := len(cat.Items)
+			if bools, ok := m.AICategorySelected[cat.ID]; ok {
+				for _, b := range bools {
+					if b {
+						selected++
+					}
+				}
+			}
+			opts = append(opts, fmt.Sprintf("%s %s (%d/%d selected)", cat.Icon, cat.Label, selected, total))
+			_ = i
+		}
+		opts = append(opts, "─────────────")
+		opts = append(opts, "✅ Confirm selection")
+		return opts
+	case ScreenAIFrameworkCategoryItems:
+		if m.SelectedModuleCategory < 0 || m.SelectedModuleCategory >= len(moduleCategories) {
+			return []string{}
+		}
+		cat := moduleCategories[m.SelectedModuleCategory]
+		opts := make([]string, 0, len(cat.Items)+2)
+		for _, item := range cat.Items {
+			opts = append(opts, item.Label)
+		}
+		opts = append(opts, "─────────────")
+		opts = append(opts, "← Back")
+		return opts
 	case ScreenBackupConfirm:
 		return []string{
 			"✅ Install with Backup (recommended)",
@@ -384,6 +448,20 @@ func (m Model) GetScreenTitle() string {
 		return "Step 5: Choose Window Manager"
 	case ScreenNvimSelect:
 		return "Step 6: Neovim Configuration"
+	case ScreenAIToolsSelect:
+		return "Step 7: AI Coding Tools"
+	case ScreenAIFrameworkConfirm:
+		return "Step 8: AI Framework"
+	case ScreenAIFrameworkPreset:
+		return "Step 8: Choose Framework Preset"
+	case ScreenAIFrameworkCategories:
+		return "Step 8: Select Module Categories"
+	case ScreenAIFrameworkCategoryItems:
+		if m.SelectedModuleCategory >= 0 && m.SelectedModuleCategory < len(moduleCategories) {
+			cat := moduleCategories[m.SelectedModuleCategory]
+			return fmt.Sprintf("Step 8: %s %s", cat.Icon, cat.Label)
+		}
+		return "Step 8: Select Modules"
 	case ScreenBackupConfirm:
 		return "⚠️  Existing Configs Detected"
 	case ScreenRestoreBackup:
@@ -482,6 +560,16 @@ func (m Model) GetScreenDescription() string {
 		return "Terminal multiplexer for managing sessions"
 	case ScreenNvimSelect:
 		return "Includes LSP, TreeSitter, and Gentleman config"
+	case ScreenAIToolsSelect:
+		return "Toggle tools with Enter. Confirm when ready."
+	case ScreenAIFrameworkConfirm:
+		return "Agents, skills, hooks, and commands for AI coding tools"
+	case ScreenAIFrameworkPreset:
+		return "Presets bundle agents, skills, hooks, and commands by role"
+	case ScreenAIFrameworkCategories:
+		return "Select a category to configure its modules"
+	case ScreenAIFrameworkCategoryItems:
+		return "Toggle modules with Enter. Press Esc to go back."
 	case ScreenGhosttyWarning:
 		return "Ghostty installation may fail on Ubuntu/Debian.\nThe installer script only supports certain versions."
 	default:
@@ -596,6 +684,31 @@ func (m *Model) SetupInstallSteps() {
 			ID:          "nvim",
 			Name:        "Install Neovim",
 			Description: "Editor with config",
+			Status:      StatusPending,
+		})
+	}
+
+	// AI Tools: Claude Code + OpenCode (not interactive)
+	if len(m.Choices.AITools) > 0 {
+		toolNames := strings.Join(m.Choices.AITools, " + ")
+		m.Steps = append(m.Steps, InstallStep{
+			ID:          "aitools",
+			Name:        "Install AI Tools",
+			Description: toolNames,
+			Status:      StatusPending,
+		})
+	}
+
+	// AI Framework (not interactive)
+	if m.Choices.InstallAIFramework {
+		presetLabel := m.Choices.AIFrameworkPreset
+		if presetLabel == "" {
+			presetLabel = "custom"
+		}
+		m.Steps = append(m.Steps, InstallStep{
+			ID:          "aiframework",
+			Name:        "Install AI Framework",
+			Description: "Preset: " + presetLabel,
 			Status:      StatusPending,
 		})
 	}
