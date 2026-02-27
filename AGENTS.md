@@ -1,4 +1,4 @@
-# Gentleman.Dots AI Agent Skills
+# Javi.Dots AI Agent Skills
 
 > **Single Source of Truth** - This file is the master for all AI assistants.
 > Run `./skills/setup.sh` to sync to Claude, Gemini, Copilot, and Codex formats.
@@ -13,7 +13,7 @@ For manual loading, read the SKILL.md file directly.
 
 ## Available Skills
 
-### Gentleman.Dots Specific (Repository Skills)
+### Javi.Dots Specific (Repository Skills)
 
 | Skill | Description | File |
 |-------|-------------|------|
@@ -104,7 +104,7 @@ GentlemanClaude/skills/              # User-installable skills
 
 ## Project Overview
 
-**Gentleman.Dots** is a dotfiles manager + TUI installer with:
+**Javi.Dots** (fork of [Gentleman.Dots](https://github.com/Gentleman-Programming/Gentleman.Dots)) is a dotfiles manager + TUI installer with:
 - Go TUI using Bubbletea framework
 - RPG-style Vim Trainer
 - Multi-platform support (macOS, Linux, Termux)

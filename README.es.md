@@ -1,4 +1,6 @@
-# Gentleman.Dots
+# Javi.Dots
+
+> 🍴 **Fork de [Gentleman.Dots](https://github.com/Gentleman-Programming/Gentleman.Dots)** por [Gentleman Programming](https://youtube.com/@GentlemanProgramming). Las actualizaciones del upstream se mergean regularmente.
 
 > ℹ️ **Actualización (enero 2026)**: OpenCode ahora soporta suscripciones **Claude Max/Pro** mediante el plugin `opencode-anthropic-auth` (incluido en esta configuración).
 > Tanto **Claude Code** como **OpenCode** funcionan con tu suscripción de Claude.
@@ -15,7 +17,6 @@
 * [🎮 Entrenador de Maestría en Vim](#-entrenador-de-maestría-en-vim)
 * [Documentación](#documentación)
 * [Resumen de herramientas](#resumen-de-herramientas)
-* [Bleeding Edge](#bleeding-edge)
 * [Estructura del proyecto](#estructura-del-proyecto)
 * [Soporte](#soporte)
 
@@ -59,16 +60,16 @@ gentleman-dots
 
 ```bash
 # macOS Apple Silicon
-curl -fsSL https://github.com/Gentleman-Programming/Gentleman.Dots/releases/latest/download/gentleman-installer-darwin-arm64 -o gentleman.dots
+curl -fsSL https://github.com/JNZader/Javi.Dots/releases/latest/download/gentleman-installer-darwin-arm64 -o gentleman.dots
 
 # macOS Intel
-curl -fsSL https://github.com/Gentleman-Programming/Gentleman.Dots/releases/latest/download/gentleman-installer-darwin-amd64 -o gentleman.dots
+curl -fsSL https://github.com/JNZader/Javi.Dots/releases/latest/download/gentleman-installer-darwin-amd64 -o gentleman.dots
 
 # Linux x86_64
-curl -fsSL https://github.com/Gentleman-Programming/Gentleman.Dots/releases/latest/download/gentleman-installer-linux-amd64 -o gentleman.dots
+curl -fsSL https://github.com/JNZader/Javi.Dots/releases/latest/download/gentleman-installer-linux-amd64 -o gentleman.dots
 
 # Linux ARM64 (Raspberry Pi, etc.)
-curl -fsSL https://github.com/Gentleman-Programming/Gentleman.Dots/releases/latest/download/gentleman-installer-linux-arm64 -o gentleman.dots
+curl -fsSL https://github.com/JNZader/Javi.Dots/releases/latest/download/gentleman-installer-linux-arm64 -o gentleman.dots
 
 # Luego ejecutar
 chmod +x gentleman.dots
@@ -85,8 +86,8 @@ pkg update && pkg upgrade
 pkg install git golang
 
 # 2. Clonar el repositorio
-git clone https://github.com/Gentleman-Programming/Gentleman.Dots.git
-cd Gentleman.Dots/installer
+git clone https://github.com/JNZader/Javi.Dots.git
+cd Javi.Dots/installer
 
 # 3. Compilar y ejecutar
 go build -o ~/gentleman-installer ./cmd/gentleman-installer
@@ -238,20 +239,10 @@ Podés iniciarlo desde el menú principal: **Vim Mastery Trainer**
 
 ---
 
-## Bleeding Edge
-
-¿Querés las últimas funcionalidades experimentales de mi workflow diario (solo macOS)?
-
-Mirá la rama [`nix-migration`](https://github.com/Gentleman-Programming/Gentleman.Dots/tree/nix-migration).
-
-Contiene configuraciones de vanguardia que luego pasan a `main` cuando se estabilizan.
-
----
-
 ## Estructura del proyecto
 
 ```
-Gentleman.Dots/
+Javi.Dots/
 ├── installer/               # Instalador TUI en Go
 │   ├── cmd/                 # Punto de entrada
 │   ├── internal/            # TUI, sistema y entrenador
@@ -281,10 +272,10 @@ Gentleman.Dots/
 
 ## Soporte
 
-* **Issues**: GitHub Issues
-* **Discord**: Gentleman Programming Community
-* **YouTube**: @GentlemanProgramming
-* **Twitch**: GentlemanProgramming
+* **Issues**: [GitHub Issues](https://github.com/JNZader/Javi.Dots/issues)
+* **Upstream**: [Gentleman.Dots](https://github.com/Gentleman-Programming/Gentleman.Dots) por Gentleman Programming
+* **Discord**: [Gentleman Programming Community](https://discord.gg/gentleman-programming)
+* **YouTube**: [@GentlemanProgramming](https://youtube.com/@GentlemanProgramming)
 
 ---
 
