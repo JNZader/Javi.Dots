@@ -347,7 +347,7 @@ func fetchSkillCatalog() ([]SkillInfo, error) {
 				continue
 			}
 
-			name, desc := parseSkillFrontmatter(skillFile)
+			name, desc, _, _ := parseSkillFrontmatter(skillFile)
 			if name == "" {
 				name = entry.Name()
 			}
@@ -362,6 +362,46 @@ func fetchSkillCatalog() ([]SkillInfo, error) {
 				DirName:     entry.Name(),
 				FullPath:    skillDir,
 				Installed:   installed,
+				Type:        "skill",
+			})
+		}
+	}
+
+	// Scan GentlemanClaude/plugins/ from the repo clone
+	pluginDir := filepath.Join(centralDir, "..", "..", "GentlemanClaude", "plugins")
+	// Resolve in case of symlinks or relative paths
+	if abs, err := filepath.Abs(pluginDir); err == nil {
+		pluginDir = abs
+	}
+	// Also try the Gentleman.Dots repo clone (installer may run from there)
+	if _, err := os.Stat(pluginDir); os.IsNotExist(err) {
+		pluginDir = filepath.Join("Gentleman.Dots", "GentlemanClaude", "plugins")
+	}
+	if entries, err := os.ReadDir(pluginDir); err == nil {
+		for _, entry := range entries {
+			if !entry.IsDir() {
+				continue
+			}
+			pDir := filepath.Join(pluginDir, entry.Name())
+			pluginFile := filepath.Join(pDir, "PLUGIN.md")
+			if _, err := os.Stat(pluginFile); err != nil {
+				continue
+			}
+			name, desc, _, perms := parseSkillFrontmatter(pluginFile)
+			if name == "" {
+				name = entry.Name()
+			}
+			installed := isPluginInstalled(home, name)
+
+			skills = append(skills, SkillInfo{
+				Name:        name,
+				Description: desc,
+				Category:    "plugin",
+				DirName:     entry.Name(),
+				FullPath:    pDir,
+				Installed:   installed,
+				Type:        "plugin",
+				Permissions: perms,
 			})
 		}
 	}
@@ -417,7 +457,7 @@ func scanLocalSkills(claudeDir, repoDir string, repoSkillPaths map[string]bool) 
 			if repoSkillPaths[entryPath] {
 				continue
 			}
-			name, desc := parseSkillFrontmatter(skillFile)
+			name, desc, _, _ := parseSkillFrontmatter(skillFile)
 			if name == "" {
 				name = entry.Name()
 			}
@@ -428,6 +468,7 @@ func scanLocalSkills(claudeDir, repoDir string, repoSkillPaths map[string]bool) 
 				DirName:     entry.Name(),
 				FullPath:    entryPath,
 				Installed:   true, // it's in ~/.claude/skills/, so it's installed
+				Type:        "skill",
 			})
 		} else {
 			// Parent directory with sub-skills (e.g. backend/api-gateway/, frontend/astro-ssr/)
@@ -447,7 +488,7 @@ func scanLocalSkills(claudeDir, repoDir string, repoSkillPaths map[string]bool) 
 				if repoSkillPaths[subPath] {
 					continue
 				}
-				name, desc := parseSkillFrontmatter(subSkillFile)
+				name, desc, _, _ := parseSkillFrontmatter(subSkillFile)
 				if name == "" {
 					name = sub.Name()
 				}
@@ -458,6 +499,7 @@ func scanLocalSkills(claudeDir, repoDir string, repoSkillPaths map[string]bool) 
 					DirName:     sub.Name(),
 					FullPath:    subPath,
 					Installed:   true,
+					Type:        "skill",
 				})
 			}
 		}
@@ -474,7 +516,7 @@ func scanLocalSkillDir(entryPath, resolvedPath, dirName, parentGroup string, rep
 	if _, err := os.Stat(skillFile); err != nil {
 		return
 	}
-	name, desc := parseSkillFrontmatter(skillFile)
+	name, desc, _, _ := parseSkillFrontmatter(skillFile)
 	if name == "" {
 		name = dirName
 	}
@@ -489,23 +531,24 @@ func scanLocalSkillDir(entryPath, resolvedPath, dirName, parentGroup string, rep
 		DirName:     dirName,
 		FullPath:    resolvedPath,
 		Installed:   true,
+		Type:        "skill",
 	})
 }
 
-// parseSkillFrontmatter does simple line-by-line parsing of SKILL.md YAML frontmatter.
-// Extracts "name:" and "description:" fields.
-func parseSkillFrontmatter(path string) (name, description string) {
+// parseSkillFrontmatter does simple line-by-line parsing of SKILL.md/PLUGIN.md YAML frontmatter.
+// Extracts "name:", "description:", "type:", and "permissions:" fields.
+func parseSkillFrontmatter(path string) (name, description, skillType string, permissions []string) {
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return "", ""
+		return "", "", "", nil
 	}
 	lines := strings.Split(string(data), "\n")
 	if len(lines) == 0 || strings.TrimSpace(lines[0]) != "---" {
-		return "", ""
+		return "", "", "", nil
 	}
 
-	inFrontmatter := true
 	inDescription := false
+	inPermissions := false
 	var descLines []string
 
 	for _, line := range lines[1:] {
@@ -513,18 +556,17 @@ func parseSkillFrontmatter(path string) (name, description string) {
 		if trimmed == "---" {
 			break
 		}
-		if !inFrontmatter {
-			break
-		}
 
 		// Check if this is a new top-level key (not indented or starts with a key)
 		if !strings.HasPrefix(line, " ") && !strings.HasPrefix(line, "\t") && strings.Contains(line, ":") {
 			inDescription = false
+			inPermissions = false
 		}
 
 		if strings.HasPrefix(trimmed, "name:") {
 			name = strings.TrimSpace(strings.TrimPrefix(trimmed, "name:"))
-			inDescription = false
+		} else if strings.HasPrefix(trimmed, "type:") {
+			skillType = strings.TrimSpace(strings.TrimPrefix(trimmed, "type:"))
 		} else if strings.HasPrefix(trimmed, "description:") {
 			rest := strings.TrimSpace(strings.TrimPrefix(trimmed, "description:"))
 			if rest == ">" || rest == "|" {
@@ -533,12 +575,23 @@ func parseSkillFrontmatter(path string) (name, description string) {
 			} else {
 				descLines = append(descLines, rest)
 			}
+		} else if trimmed == "permissions:" {
+			inPermissions = true
 		} else if inDescription {
 			// Continuation of multi-line description (indented lines)
 			if strings.HasPrefix(line, " ") || strings.HasPrefix(line, "\t") {
 				descLines = append(descLines, trimmed)
 			} else {
 				inDescription = false
+			}
+		} else if inPermissions {
+			// YAML list item under permissions:
+			if strings.HasPrefix(trimmed, "- ") {
+				perm := strings.TrimSpace(strings.TrimPrefix(trimmed, "- "))
+				perm = strings.Trim(perm, "\"'")
+				permissions = append(permissions, perm)
+			} else if !strings.HasPrefix(line, " ") && !strings.HasPrefix(line, "\t") {
+				inPermissions = false
 			}
 		}
 	}
@@ -547,7 +600,7 @@ func parseSkillFrontmatter(path string) (name, description string) {
 	if len(descLines) > 0 {
 		description = descLines[0]
 	}
-	return name, description
+	return name, description, skillType, permissions
 }
 
 // isSkillInstalled checks if a skill symlink/dir exists in ~/.claude/skills/ OR ~/.agents/skills/
@@ -564,7 +617,15 @@ func isSkillInstalled(home, name string) bool {
 	return false
 }
 
+// isPluginInstalled checks if a plugin directory exists in ~/.claude/plugins/<name>/PLUGIN.md
+func isPluginInstalled(home, name string) bool {
+	pluginMD := filepath.Join(home, ".claude", "plugins", name, "PLUGIN.md")
+	_, err := os.Stat(pluginMD)
+	return err == nil
+}
+
 // installSkillSymlinks creates symlinks for each skill into ~/.claude/skills/ and ~/.agents/skills/
+// For plugins (Type=="plugin"), copies the entire directory to ~/.claude/plugins/<name>/ instead.
 func installSkillSymlinks(skills []SkillInfo) ([]string, error) {
 	home, err := os.UserHomeDir()
 	if err != nil {
@@ -573,13 +634,37 @@ func installSkillSymlinks(skills []SkillInfo) ([]string, error) {
 
 	claudeSkillsDir := filepath.Join(home, ".claude", "skills")
 	agentsSkillsDir := filepath.Join(home, ".agents", "skills")
+	claudePluginsDir := filepath.Join(home, ".claude", "plugins")
 	os.MkdirAll(claudeSkillsDir, 0755)
 	os.MkdirAll(agentsSkillsDir, 0755)
+	os.MkdirAll(claudePluginsDir, 0755)
 
 	var logLines []string
 	var errors []string
 
 	for _, s := range skills {
+		if s.Type == "plugin" {
+			// Copy entire plugin directory to ~/.claude/plugins/<name>/
+			pluginDst := filepath.Join(claudePluginsDir, s.Name)
+			os.RemoveAll(pluginDst)
+			if err := system.CopyDir(s.FullPath, pluginDst); err != nil {
+				logLines = append(logLines, fmt.Sprintf("❌ %s → ~/.claude/plugins/: %v", s.Name, err))
+				errors = append(errors, s.Name)
+			} else {
+				// Make all .sh files in scripts/ subdirectory executable
+				scriptsDir := filepath.Join(pluginDst, "scripts")
+				if entries, err := os.ReadDir(scriptsDir); err == nil {
+					for _, e := range entries {
+						if !e.IsDir() && strings.HasSuffix(e.Name(), ".sh") {
+							os.Chmod(filepath.Join(scriptsDir, e.Name()), 0755)
+						}
+					}
+				}
+				logLines = append(logLines, fmt.Sprintf("✅ %s → ~/.claude/plugins/", s.Name))
+			}
+			continue
+		}
+
 		// Symlink to ~/.claude/skills/<name>
 		claudeDst := filepath.Join(claudeSkillsDir, s.Name)
 		os.RemoveAll(claudeDst)
@@ -613,6 +698,7 @@ func InstallSkillSymlinks(skills []SkillInfo) ([]string, error) {
 }
 
 // removeSkillSymlinks removes symlinks from ~/.claude/skills/ and ~/.agents/skills/
+// For plugins (Type=="plugin"), removes ~/.claude/plugins/<name>/ instead.
 func removeSkillSymlinks(skills []SkillInfo) ([]string, error) {
 	home, err := os.UserHomeDir()
 	if err != nil {
@@ -621,11 +707,26 @@ func removeSkillSymlinks(skills []SkillInfo) ([]string, error) {
 
 	claudeSkillsDir := filepath.Join(home, ".claude", "skills")
 	agentsSkillsDir := filepath.Join(home, ".agents", "skills")
+	claudePluginsDir := filepath.Join(home, ".claude", "plugins")
 
 	var logLines []string
 	var errors []string
 
 	for _, s := range skills {
+		if s.Type == "plugin" {
+			// Remove from ~/.claude/plugins/<name>/
+			pluginDst := filepath.Join(claudePluginsDir, s.Name)
+			if _, err := os.Lstat(pluginDst); err == nil {
+				if err := os.RemoveAll(pluginDst); err != nil {
+					logLines = append(logLines, fmt.Sprintf("❌ %s: failed to remove from ~/.claude/plugins/: %v", s.Name, err))
+					errors = append(errors, s.Name)
+				} else {
+					logLines = append(logLines, fmt.Sprintf("✅ %s removed from ~/.claude/plugins/", s.Name))
+				}
+			}
+			continue
+		}
+
 		removed := false
 		// Remove from ~/.claude/skills/<name>
 		claudeDst := filepath.Join(claudeSkillsDir, s.Name)

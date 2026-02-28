@@ -769,14 +769,16 @@ func (m Model) GetScreenDescription() string {
 	}
 }
 
-// SkillInfo holds parsed metadata about a skill from the catalog
+// SkillInfo holds parsed metadata about a skill or plugin from the catalog
 type SkillInfo struct {
-	Name        string // from frontmatter "name"
-	Description string // from frontmatter "description" (first line only for display)
-	Category    string // "curated" or "community"
-	DirName     string // folder name (e.g. "react-19")
-	FullPath    string // absolute path to the skill dir
-	Installed   bool   // true if symlink exists in any CLI skill path
+	Name        string   // from frontmatter "name"
+	Description string   // from frontmatter "description" (first line only for display)
+	Category    string   // "curated", "community", "plugin", or "local"
+	DirName     string   // folder name (e.g. "react-19")
+	FullPath    string   // absolute path to the skill/plugin dir
+	Installed   bool     // true if symlink/dir exists in the appropriate path
+	Type        string   // "skill" or "plugin"
+	Permissions []string // only for plugins: settings.json permission entries
 }
 
 // truncateDesc truncates a description to maxLen characters, adding ellipsis if needed
@@ -802,8 +804,8 @@ func filterSkillsByCategory(skills []SkillInfo, category string) []SkillInfo {
 func getSkillCategoryOrder(skills []SkillInfo) []string {
 	seen := make(map[string]bool)
 	var order []string
-	// Fixed order: curated first, community second, then local groups
-	for _, prio := range []string{"curated", "community"} {
+	// Fixed order: curated first, community second, plugin third, then local groups
+	for _, prio := range []string{"curated", "community", "plugin"} {
 		for _, s := range skills {
 			if s.Category == prio && !seen[prio] {
 				seen[prio] = true
@@ -829,6 +831,8 @@ func skillCategoryHeader(category string) string {
 		return "📦 Curated"
 	case "community":
 		return "🌐 Community"
+	case "plugin":
+		return "━━━ Plugins ━━━"
 	case "local":
 		return "🏠 Local"
 	default:

@@ -390,9 +390,9 @@ func TestSkillOptionToIndex(t *testing.T) {
 
 func TestParseSkillFrontmatter(t *testing.T) {
 	t.Run("returns empty for non-existent file", func(t *testing.T) {
-		name, desc := parseSkillFrontmatter("/tmp/nonexistent-skill-test-file.md")
-		if name != "" || desc != "" {
-			t.Errorf("expected empty name and desc for missing file, got %q %q", name, desc)
+		name, desc, skillType, perms := parseSkillFrontmatter("/tmp/nonexistent-skill-test-file.md")
+		if name != "" || desc != "" || skillType != "" || perms != nil {
+			t.Errorf("expected empty values for missing file, got name=%q desc=%q type=%q perms=%v", name, desc, skillType, perms)
 		}
 	})
 }

@@ -1171,6 +1171,7 @@ func stepInstallAITools(m *Model) error {
 		system.EnsureDir(claudeDir)
 		system.EnsureDir(filepath.Join(claudeDir, "output-styles"))
 		system.EnsureDir(filepath.Join(claudeDir, "skills"))
+		system.EnsureDir(filepath.Join(claudeDir, "plugins"))
 		system.CopyFile(filepath.Join(repoDir, "GentlemanClaude/CLAUDE.md"), filepath.Join(claudeDir, "CLAUDE.md"))
 		system.CopyFile(filepath.Join(repoDir, "GentlemanClaude/settings.json"), filepath.Join(claudeDir, "settings.json"))
 		system.CopyFile(filepath.Join(repoDir, "GentlemanClaude/statusline.sh"), filepath.Join(claudeDir, "statusline.sh"))
