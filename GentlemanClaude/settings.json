@@ -97,7 +97,10 @@
       "Bash(nx:*)",
       "Bash(turbo:*)",
       "WebFetch",
-      "WebSearch"
+      "WebSearch",
+      "Bash(~/.claude/plugins/merge-checks/scripts/*:*)",
+      "Bash(~/.claude/plugins/trim-md/scripts/*:*)",
+      "Bash(~/.claude/plugins/mermaid/scripts/*:*)"
     ]
   }
 }

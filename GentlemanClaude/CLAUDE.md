@@ -61,6 +61,14 @@ IMPORTANT: When you detect any of these contexts, IMMEDIATELY read the correspon
 | Playwright tests, e2e                  | `~/.claude/skills/playwright/SKILL.md` |
 | Pytest, Python testing                 | `~/.claude/skills/pytest/SKILL.md`     |
 
+### Plugin Detection
+
+| Context                                       | Read this file                                |
+| --------------------------------------------- | --------------------------------------------- |
+| PR review, merge audit, code quality checks   | `~/.claude/plugins/merge-checks/PLUGIN.md`    |
+| Markdown cleanup, lint, token optimization     | `~/.claude/plugins/trim-md/PLUGIN.md`         |
+| Mermaid diagrams, architecture docs, SVG gen   | `~/.claude/plugins/mermaid/PLUGIN.md`         |
+
 ### How to use skills
 
 1. Detect context from user request or current file being edited
