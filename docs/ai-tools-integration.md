@@ -103,7 +103,7 @@ Custom is the **first option** (index 0), followed by a separator, then 6 preset
 
 ### Step 8c: Custom Category Drill-Down
 
-The custom selection uses a **two-level drill-down** instead of a flat checkbox list, making it possible to navigate 203 individual modules across 6 categories.
+The custom selection uses a **two-level drill-down** instead of a flat checkbox list, making it possible to navigate 206 individual modules across 6 categories.
 
 #### Category Menu (`ScreenAIFrameworkCategories`)
 
@@ -115,7 +115,7 @@ Shows 6 categories with live selection counts. No checkboxes — cursor navigati
   🤖 Agents (3/80 selected)
   🎯 Skills (5/85 selected)
   📐 SDD (1/2 selected)
-  🔌 MCP (2/6 selected)
+  🔌 MCP (2/9 selected)
   ─────────────
   ✅ Confirm selection
 ```

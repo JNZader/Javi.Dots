@@ -1,6 +1,6 @@
 # AI Framework Module Registry
 
-Complete reference of all 203 modules across 6 categories available in the [project-starter-framework](https://github.com/JNZader/project-starter-framework). These modules are configured via the TUI installer's Custom mode or the `--ai-modules` CLI flag.
+Complete reference of all 206 modules across 6 categories available in the [project-starter-framework](https://github.com/JNZader/project-starter-framework). These modules are configured via the TUI installer's Custom mode or the `--ai-modules` CLI flag.
 
 ## Table of Contents
 
@@ -12,13 +12,13 @@ Complete reference of all 203 modules across 6 categories available in the [proj
 - [Agents (80 items)](#-agents-80-items)
 - [Skills (85 items)](#-skills-85-items)
 - [SDD — Spec-Driven Development (2 items)](#-sdd--spec-driven-development-2-items)
-- [MCP Servers (6 items)](#-mcp-servers-6-items)
+- [MCP Servers (9 items)](#-mcp-servers-9-items)
 
 ---
 
 ## Overview
 
-The installer presents 203 individual modules organized into 6 categories. In the TUI, you can browse and toggle individual items within each category. However, `setup-global.sh` operates at the **feature level** — selecting ANY item within a category enables that entire feature.
+The installer presents 206 individual modules organized into 6 categories. In the TUI, you can browse and toggle individual items within each category. However, `setup-global.sh` operates at the **feature level** — selecting ANY item within a category enables that entire feature.
 
 ## How Features Work
 
@@ -30,7 +30,7 @@ TUI Category Drill-Down        →    setup-global.sh
 🤖 Agents (1/80 selected)     →    --features=agents
 🎯 Skills (5/85 selected)     →    --features=skills
 📐 SDD: OpenSpec ✓             →    --features=sdd
-🔌 MCP (2/6 selected)         →    --features=mcp
+🔌 MCP (2/9 selected)         →    --features=mcp
 ```
 
 **Result:** `setup-global.sh --features=hooks,agents,skills,sdd,mcp`
@@ -48,9 +48,9 @@ The individual item selection in the TUI is **informational** — it helps you s
 | Agents | 🤖 | 80 | `agents` | No |
 | Skills | 🎯 | 85 | `skills` | No |
 | SDD | 📐 | 2 | `sdd` (OpenSpec only) | No |
-| MCP Servers | 🔌 | 6 | `mcp` | Yes |
+| MCP Servers | 🔌 | 9 | `mcp` | Yes |
 
-**Total: 203 modules**
+**Total: 206 modules**
 
 ---
 
@@ -463,7 +463,7 @@ See [Agent Teams Lite documentation](agent-teams-lite.md) for details on the Age
 
 ---
 
-## 🔌 MCP Servers (6 items)
+## 🔌 MCP Servers (9 items)
 
 Model Context Protocol servers for enhanced AI capabilities. MCP is **atomic** — selecting any item enables the `mcp` feature, which installs ALL MCP server configurations. These servers extend your AI tool with external data sources and services.
 
@@ -475,3 +475,6 @@ Model Context Protocol servers for enhanced AI capabilities. MCP is **atomic** �
 | `mcp-atlassian` | Atlassian | Confluence and Atlassian suite integration |
 | `mcp-figma` | Figma | Figma design file integration |
 | `mcp-notion` | Notion | Notion workspace integration |
+| `mcp-brave-search` | Brave Search | Web search via Brave Search API (requires BRAVE_API_KEY) |
+| `mcp-sentry` | Sentry | Error monitoring and performance tracking via Sentry |
+| `mcp-cloudflare` | Cloudflare | Cloudflare Workers, Pages, and infrastructure management |

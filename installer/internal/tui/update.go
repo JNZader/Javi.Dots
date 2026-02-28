@@ -1818,6 +1818,9 @@ var moduleCategories = []ModuleCategory{
 			{ID: "mcp-atlassian", Label: "Atlassian"},
 			{ID: "mcp-figma", Label: "Figma"},
 			{ID: "mcp-notion", Label: "Notion"},
+			{ID: "mcp-brave-search", Label: "Brave Search"},
+			{ID: "mcp-sentry", Label: "Sentry"},
+			{ID: "mcp-cloudflare", Label: "Cloudflare"},
 		},
 	},
 }

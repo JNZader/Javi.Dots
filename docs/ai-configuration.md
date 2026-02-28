@@ -76,10 +76,10 @@ These are automatically installed by the TUI installer (Step 7: AI Tools Selecti
 | Gemini CLI | `npm install -g @google/gemini-cli` | ✅ Binary only |
 | GitHub Copilot CLI | `gh extension install github/gh-copilot` | ✅ Extension install |
 
-The installer also optionally configures the **AI Framework** (Step 8) with 203 modules across 6 categories: hooks, commands, agents, skills, SDD, and MCP servers.
+The installer also optionally configures the **AI Framework** (Step 8) with 206 modules across 6 categories: hooks, commands, agents, skills, SDD, and MCP servers.
 
 > See [AI Tools & Framework Integration](ai-tools-integration.md) for the full installation guide.
-> See [AI Framework Module Registry](ai-framework-modules.md) for the complete list of 203 modules.
+> See [AI Framework Module Registry](ai-framework-modules.md) for the complete list of 206 modules.
 > See [Agent Teams Lite](agent-teams-lite.md) for the SDD orchestration framework.
 
 > Some services require API keys. Check each plugin's documentation for details.
@@ -111,7 +111,7 @@ The installer configures:
 | `statusline.sh` | Custom status bar script |
 | `output-styles/gentleman.md` | The Gentleman persona definition |
 | `skills/` | Framework standards + SDD agent-team orchestration pack |
-| `mcp-servers.template.json` | MCP server templates (Context7, Jira, Figma) |
+| `mcp-servers.template.json` | MCP server templates (Context7, Jira, Figma, Brave Search, Sentry, Cloudflare) |
 
 **Included Skills:**
 
@@ -312,8 +312,13 @@ The Gentleman OpenCode config includes MCP (Model Context Protocol) integration:
 |--------|-------------|
 | **Context7** | Remote MCP for fetching up-to-date documentation |
 | **Engram** | Local MCP backend for persistent SDD artifacts |
+| **Notion** | Notion workspace integration |
+| **Jira** | Jira integration via Atlassian MCP |
+| **Brave Search** | Web search via Brave Search API (requires `BRAVE_API_KEY` env var) |
+| **Sentry** | Error monitoring and performance tracking via Sentry (OAuth) |
+| **Cloudflare** | Cloudflare Workers, Pages, and infrastructure management (OAuth) |
 
-This is enabled by default and enhances the agent's ability to verify information with current docs.
+This is enabled by default and enhances the agent's ability to verify information with current docs and external services.
 
 ---
 
