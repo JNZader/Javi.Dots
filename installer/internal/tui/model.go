@@ -365,7 +365,7 @@ func (m Model) GetCurrentOptions() []string {
 	case ScreenNvimSelect:
 		return []string{"Yes, install Neovim with config", "No, skip Neovim", "─────────────", "ℹ️  Learn about Neovim", "⌨️  View Keymaps", "📖 LazyVim Guide"}
 	case ScreenAIToolsSelect:
-		return []string{"Claude Code", "OpenCode", "Gemini CLI", "GitHub Copilot", "─────────────", "✅ Confirm selection"}
+		return []string{"Claude Code", "OpenCode", "Gemini CLI", "GitHub Copilot", "Codex CLI", "─────────────", "✅ Confirm selection"}
 	case ScreenAIFrameworkConfirm:
 		return []string{"Yes, install AI Framework", "No, skip framework"}
 	case ScreenAIFrameworkPreset:

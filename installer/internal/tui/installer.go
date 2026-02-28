@@ -1132,6 +1132,19 @@ func stepInstallAITools(m *Model) error {
 		}
 	}
 
+	// Install OpenAI Codex CLI
+	if hasAITool(m.Choices.AITools, "codex") {
+		SendLog(stepID, "Installing Codex CLI...")
+		result := system.RunWithLogs(`npm install -g @openai/codex`, nil, func(line string) {
+			SendLog(stepID, line)
+		})
+		if result.Error != nil {
+			SendLog(stepID, "⚠️ Could not install Codex CLI (run 'npm install -g @openai/codex' manually)")
+		} else {
+			SendLog(stepID, "✓ Codex CLI installed")
+		}
+	}
+
 	// Install GitHub Copilot CLI extension
 	if hasAITool(m.Choices.AITools, "copilot") {
 		SendLog(stepID, "Installing GitHub Copilot CLI...")

@@ -14,9 +14,9 @@ func TestAIToolsSelectOptions(t *testing.T) {
 	m.Screen = ScreenAIToolsSelect
 	opts := m.GetCurrentOptions()
 
-	// 4 tools + separator + confirm = 6
-	if len(opts) != 6 {
-		t.Fatalf("Expected 6 AI tools options (4 tools + separator + confirm), got %d: %v", len(opts), opts)
+	// 5 tools + separator + confirm = 7
+	if len(opts) != 7 {
+		t.Fatalf("Expected 7 AI tools options (5 tools + separator + confirm), got %d: %v", len(opts), opts)
 	}
 	if opts[0] != "Claude Code" {
 		t.Errorf("Expected first option 'Claude Code', got %s", opts[0])
@@ -30,11 +30,14 @@ func TestAIToolsSelectOptions(t *testing.T) {
 	if opts[3] != "GitHub Copilot" {
 		t.Errorf("Expected fourth option 'GitHub Copilot', got %s", opts[3])
 	}
-	if !strings.HasPrefix(opts[4], "───") {
-		t.Errorf("Expected separator at index 4, got %s", opts[4])
+	if opts[4] != "Codex CLI" {
+		t.Errorf("Expected fifth option 'Codex CLI', got %s", opts[4])
 	}
-	if !strings.Contains(opts[5], "Confirm") {
-		t.Errorf("Expected last option to be Confirm, got %s", opts[5])
+	if !strings.HasPrefix(opts[5], "───") {
+		t.Errorf("Expected separator at index 5, got %s", opts[5])
+	}
+	if !strings.Contains(opts[6], "Confirm") {
+		t.Errorf("Expected last option to be Confirm, got %s", opts[6])
 	}
 }
 
@@ -684,8 +687,8 @@ func TestAIToolsSelectAllTools(t *testing.T) {
 	result, _ := m.handleAIToolsKeys("enter")
 	newModel := result.(Model)
 
-	if len(newModel.Choices.AITools) != 4 {
-		t.Fatalf("Expected 4 AI tools, got %d: %v", len(newModel.Choices.AITools), newModel.Choices.AITools)
+	if len(newModel.Choices.AITools) != 5 {
+		t.Fatalf("Expected 5 AI tools, got %d: %v", len(newModel.Choices.AITools), newModel.Choices.AITools)
 	}
 	if newModel.Screen != ScreenAIFrameworkConfirm {
 		t.Errorf("Expected ScreenAIFrameworkConfirm, got %v", newModel.Screen)
@@ -970,8 +973,8 @@ func TestSetupInstallStepsWithoutAIFramework(t *testing.T) {
 // --- ID Map Tests ---
 
 func TestAIToolIDMapLength(t *testing.T) {
-	if len(aiToolIDMap) != 4 {
-		t.Errorf("Expected 4 tool IDs in aiToolIDMap, got %d", len(aiToolIDMap))
+	if len(aiToolIDMap) != 5 {
+		t.Errorf("Expected 5 tool IDs in aiToolIDMap, got %d", len(aiToolIDMap))
 	}
 }
 

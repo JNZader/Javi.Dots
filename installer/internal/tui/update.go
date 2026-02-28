@@ -1125,7 +1125,7 @@ func (m Model) proceedToBackupOrInstall() (tea.Model, tea.Cmd) {
 }
 
 // aiToolIDMap maps AI tool option index to tool ID
-var aiToolIDMap = []string{"claude", "opencode", "gemini", "copilot"}
+var aiToolIDMap = []string{"claude", "opencode", "gemini", "copilot", "codex"}
 
 // ModuleCategory groups related module items for the category drill-down UI
 type ModuleCategory struct {

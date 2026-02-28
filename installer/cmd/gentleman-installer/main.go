@@ -57,7 +57,7 @@ func parseFlags() *cliFlags {
 	flag.BoolVar(&flags.nvim, "nvim", false, "Install Neovim configuration")
 	flag.BoolVar(&flags.font, "font", false, "Install Nerd Font")
 	flag.BoolVar(&flags.backup, "backup", true, "Backup existing configs (default: true)")
-	flag.StringVar(&flags.aiTools, "ai-tools", "", "AI tools: claude,opencode,gemini,copilot (comma-separated)")
+	flag.StringVar(&flags.aiTools, "ai-tools", "", "AI tools: claude,opencode,gemini,copilot,codex (comma-separated)")
 	flag.BoolVar(&flags.aiFramework, "ai-framework", false, "Install AI coding framework")
 	flag.StringVar(&flags.aiPreset, "ai-preset", "", "Framework preset: minimal, frontend, backend, fullstack, data, complete")
 	flag.StringVar(&flags.aiModules, "ai-modules", "", "Framework features: hooks,commands,skills,agents,sdd,mcp (comma-separated)")
@@ -252,11 +252,11 @@ func runNonInteractive(flags *cliFlags) error {
 	// Parse AI tools
 	var aiTools []string
 	if flags.aiTools != "" {
-		validAITools := map[string]bool{"claude": true, "opencode": true, "gemini": true, "copilot": true}
+		validAITools := map[string]bool{"claude": true, "opencode": true, "gemini": true, "copilot": true, "codex": true}
 		for _, tool := range strings.Split(flags.aiTools, ",") {
 			tool = strings.TrimSpace(strings.ToLower(tool))
 			if !validAITools[tool] {
-				return fmt.Errorf("invalid AI tool: %s (valid: claude, opencode, gemini, copilot)", tool)
+				return fmt.Errorf("invalid AI tool: %s (valid: claude, opencode, gemini, copilot, codex)", tool)
 			}
 			aiTools = append(aiTools, tool)
 		}
@@ -383,7 +383,7 @@ Non-Interactive Options:
   --backup=false       Disable config backup (default: true)
 
 AI Options:
-  --ai-tools=<tools>   AI tools (comma-separated): claude, opencode, gemini, copilot
+  --ai-tools=<tools>   AI tools (comma-separated): claude, opencode, gemini, copilot, codex
   --ai-framework       Install AI coding framework
   --ai-preset=<name>   Framework preset: minimal, frontend, backend, fullstack, data, complete
   --ai-modules=<feats> Framework features (comma-separated): hooks, commands, skills, agents, sdd, mcp
@@ -409,7 +409,7 @@ Examples:
   gentleman.dots --non-interactive --shell=fish --wm=zellij --nvim
 
   # Full setup with AI tools and framework preset
-  gentleman.dots --non-interactive --shell=fish --nvim --ai-tools=claude,opencode,gemini,copilot --ai-preset=fullstack
+  gentleman.dots --non-interactive --shell=fish --nvim --ai-tools=claude,opencode,gemini,copilot,codex --ai-preset=fullstack
 
   # Custom feature selection with Agent Teams Lite
   gentleman.dots --non-interactive --shell=zsh --ai-tools=claude --ai-framework \
