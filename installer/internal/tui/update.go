@@ -783,7 +783,7 @@ func (m Model) handleKeyPress(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m.handleMainMenuKeys(key)
 
 	case ScreenOSSelect, ScreenTerminalSelect, ScreenFontSelect, ScreenShellSelect, ScreenWMSelect, ScreenNvimSelect, ScreenAIFrameworkConfirm, ScreenAIFrameworkPreset, ScreenGhosttyWarning,
-		ScreenProjectStack, ScreenProjectMemory, ScreenProjectObsidianInstall, ScreenProjectEngram, ScreenProjectCI, ScreenProjectConfirm, ScreenSkillMenu:
+		ScreenProjectStack, ScreenProjectMemory, ScreenProjectObsidianInstall, ScreenProjectEngram, ScreenProjectCI, ScreenProjectConfirm, ScreenSkillMenu, ScreenLearnMenu:
 		return m.handleSelectionKeys(key)
 
 	case ScreenAIToolsSelect:
@@ -954,17 +954,20 @@ func (m Model) handleEscape() (tea.Model, tea.Cmd) {
 	case ScreenKeymapsMenu, ScreenLearnLazyVim:
 		m.Screen = m.PrevScreen
 		m.Cursor = 0
+	case ScreenLearnMenu:
+		m.Screen = ScreenMainMenu
+		m.Cursor = 0
 	// Restore screens
 	case ScreenRestoreBackup, ScreenRestoreConfirm:
 		m.Screen = ScreenMainMenu
 		m.Cursor = 0
 	// Trainer screens
 	case ScreenTrainerMenu:
-		// Save stats and return to main menu
+		// Save stats and return to previous screen
 		if m.TrainerStats != nil {
 			trainer.SaveStats(m.TrainerStats)
 		}
-		m.Screen = ScreenMainMenu
+		m.Screen = m.PrevScreen
 		m.Cursor = 0
 	case ScreenTrainerLesson, ScreenTrainerPractice, ScreenTrainerBoss:
 		// Return to trainer menu (stats saved in handlers)
@@ -1030,30 +1033,9 @@ func (m Model) handleMainMenuKeys(key string) (tea.Model, tea.Cmd) {
 			} else {
 				m.Cursor = 0 // macOS is first option (default)
 			}
-		case strings.Contains(selected, "Learn About Tools"):
-			m.Screen = ScreenLearnTerminals
-			m.PrevScreen = ScreenMainMenu
+		case strings.Contains(selected, "Learn & Practice"):
+			m.Screen = ScreenLearnMenu
 			m.Cursor = 0
-		case strings.Contains(selected, "Keymaps Reference"):
-			m.Screen = ScreenKeymapsMenu
-			m.PrevScreen = ScreenMainMenu
-			m.Cursor = 0
-		case strings.Contains(selected, "LazyVim Guide"):
-			m.Screen = ScreenLearnLazyVim
-			m.PrevScreen = ScreenMainMenu
-			m.Cursor = 0
-		case strings.Contains(selected, "Vim Trainer"):
-			// Load user stats when entering trainer
-			stats := trainer.LoadStats()
-			if stats == nil {
-				stats = trainer.NewUserStats()
-			}
-			m.TrainerStats = stats
-			m.TrainerGameState = nil
-			m.TrainerCursor = 0
-			m.TrainerInput = ""
-			m.Screen = ScreenTrainerMenu
-			m.PrevScreen = ScreenMainMenu
 		case strings.Contains(selected, "Restore from Backup") && hasRestoreOption:
 			m.Screen = ScreenRestoreBackup
 			m.Cursor = 0
@@ -1215,6 +1197,11 @@ func (m Model) goBackInstallStep() (tea.Model, tea.Cmd) {
 		m.Cursor = 0
 	case ScreenProjectConfirm:
 		m.Screen = ScreenProjectCI
+		m.Cursor = 0
+
+	// Learn & Practice menu
+	case ScreenLearnMenu:
+		m.Screen = ScreenMainMenu
 		m.Cursor = 0
 
 	// Skill manager screens - back navigation
@@ -1419,6 +1406,38 @@ func (m Model) handleSelection() (tea.Model, tea.Cmd) {
 			m.Screen = ScreenProjectInstalling
 			return m, func() tea.Msg { return projectInstallStartMsg{} }
 		} else { // Cancel
+			m.Screen = ScreenMainMenu
+			m.Cursor = 0
+		}
+
+	// Learn & Practice submenu
+	case ScreenLearnMenu:
+		switch {
+		case strings.Contains(selected, "learn about tools"):
+			m.Screen = ScreenLearnTerminals
+			m.PrevScreen = ScreenLearnMenu
+			m.Cursor = 0
+		case strings.Contains(selected, "keymaps reference"):
+			m.Screen = ScreenKeymapsMenu
+			m.PrevScreen = ScreenLearnMenu
+			m.Cursor = 0
+		case strings.Contains(selected, "lazyvim guide"):
+			m.Screen = ScreenLearnLazyVim
+			m.PrevScreen = ScreenLearnMenu
+			m.Cursor = 0
+		case strings.Contains(selected, "vim trainer"):
+			// Load user stats when entering trainer
+			stats := trainer.LoadStats()
+			if stats == nil {
+				stats = trainer.NewUserStats()
+			}
+			m.TrainerStats = stats
+			m.TrainerGameState = nil
+			m.TrainerCursor = 0
+			m.TrainerInput = ""
+			m.Screen = ScreenTrainerMenu
+			m.PrevScreen = ScreenLearnMenu
+		case strings.Contains(selected, "← back"):
 			m.Screen = ScreenMainMenu
 			m.Cursor = 0
 		}

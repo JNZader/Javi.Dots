@@ -49,6 +49,8 @@ func (m Model) View() string {
 		s.WriteString(m.renderWelcome())
 	case ScreenMainMenu:
 		s.WriteString(m.renderMainMenu())
+	case ScreenLearnMenu:
+		s.WriteString(m.renderSelection())
 	case ScreenOSSelect, ScreenTerminalSelect, ScreenFontSelect, ScreenShellSelect, ScreenWMSelect, ScreenNvimSelect, ScreenAIFrameworkConfirm, ScreenAIFrameworkPreset, ScreenGhosttyWarning:
 		s.WriteString(m.renderSelection())
 	case ScreenAIToolsSelect:

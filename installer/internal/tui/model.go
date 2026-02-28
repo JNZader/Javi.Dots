@@ -16,6 +16,7 @@ type Screen int
 const (
 	ScreenWelcome Screen = iota
 	ScreenMainMenu
+	ScreenLearnMenu // Submenu grouping all learning options
 	ScreenOSSelect
 	ScreenTerminalSelect
 	ScreenFontSelect
@@ -316,10 +317,7 @@ func (m Model) GetCurrentOptions() []string {
 	case ScreenMainMenu:
 		opts := []string{
 			"🚀 Start Installation",
-			"📚 Learn About Tools",
-			"⌨️  Keymaps Reference",
-			"📖 LazyVim Guide",
-			"🎮 Vim Trainer",
+			"📚 Learn & Practice",
 		}
 		// Add restore option if backups exist
 		if len(m.AvailableBackups) > 0 {
@@ -329,6 +327,15 @@ func (m Model) GetCurrentOptions() []string {
 		opts = append(opts, "🎯 Skill Manager")
 		opts = append(opts, "❌ Exit")
 		return opts
+	case ScreenLearnMenu:
+		return []string{
+			"📚 Learn About Tools",
+			"⌨️  Keymaps Reference",
+			"📖 LazyVim Guide",
+			"🎮 Vim Trainer",
+			"─────────────",
+			"← Back",
+		}
 	case ScreenKeymapsMenu:
 		return []string{"Neovim", "Tmux", "Zellij", "Ghostty", "─────────────", "← Back"}
 	case ScreenOSSelect:
@@ -515,6 +522,8 @@ func (m Model) GetScreenTitle() string {
 		return "Welcome to Javi.Dots Installer"
 	case ScreenMainMenu:
 		return "Main Menu"
+	case ScreenLearnMenu:
+		return "📚 Learn & Practice"
 	case ScreenOSSelect:
 		return "Step 1: Select Your Operating System"
 	case ScreenTerminalSelect:
@@ -652,6 +661,8 @@ func (m Model) GetScreenTitle() string {
 // GetScreenDescription returns a description for the current screen
 func (m Model) GetScreenDescription() string {
 	switch m.Screen {
+	case ScreenLearnMenu:
+		return "Explore tools, keymaps, guides, and practice Vim"
 	case ScreenOSSelect:
 		detected := m.SystemInfo.OSName
 		if m.SystemInfo.IsWSL {

@@ -174,9 +174,13 @@ func TestKeymapsE2E(t *testing.T) {
 	tm.Send(tea.KeyMsg{Type: tea.KeyEnter})
 	time.Sleep(50 * time.Millisecond)
 
-	// Main Menu -> Navigate down to Keymaps (index 2)
+	// Main Menu -> Navigate to Learn & Practice (index 1)
 	tm.Send(tea.KeyMsg{Type: tea.KeyDown})
 	time.Sleep(20 * time.Millisecond)
+	tm.Send(tea.KeyMsg{Type: tea.KeyEnter})
+	time.Sleep(50 * time.Millisecond)
+
+	// Learn & Practice -> Navigate to Keymaps Reference (index 1)
 	tm.Send(tea.KeyMsg{Type: tea.KeyDown})
 	time.Sleep(20 * time.Millisecond)
 	tm.Send(tea.KeyMsg{Type: tea.KeyEnter})
@@ -419,9 +423,13 @@ func TestLazyVimGuideE2E(t *testing.T) {
 	tm.Send(tea.KeyMsg{Type: tea.KeyEnter})
 	time.Sleep(50 * time.Millisecond)
 
-	// Main Menu -> Navigate to LazyVim Guide (index 3)
+	// Main Menu -> Navigate to Learn & Practice (index 1)
 	tm.Send(tea.KeyMsg{Type: tea.KeyDown})
 	time.Sleep(20 * time.Millisecond)
+	tm.Send(tea.KeyMsg{Type: tea.KeyEnter})
+	time.Sleep(50 * time.Millisecond)
+
+	// Learn & Practice -> Navigate to LazyVim Guide (index 2)
 	tm.Send(tea.KeyMsg{Type: tea.KeyDown})
 	time.Sleep(20 * time.Millisecond)
 	tm.Send(tea.KeyMsg{Type: tea.KeyDown})

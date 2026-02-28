@@ -200,10 +200,10 @@ func TestLearnScreensNavigation(t *testing.T) {
 
 // TestKeymapsNavigation tests keymaps screen navigation
 func TestKeymapsNavigation(t *testing.T) {
-	t.Run("can access keymaps menu from main menu", func(t *testing.T) {
+	t.Run("can access keymaps menu from learn menu", func(t *testing.T) {
 		m := NewModel()
-		m.Screen = ScreenMainMenu
-		m.Cursor = 2 // Keymaps Reference
+		m.Screen = ScreenLearnMenu
+		m.Cursor = 1 // Keymaps Reference
 
 		result, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
 		m = result.(Model)
@@ -257,10 +257,10 @@ func TestKeymapsNavigation(t *testing.T) {
 
 // TestLazyVimNavigation tests LazyVim guide navigation
 func TestLazyVimNavigation(t *testing.T) {
-	t.Run("can access LazyVim guide from main menu", func(t *testing.T) {
+	t.Run("can access LazyVim guide from learn menu", func(t *testing.T) {
 		m := NewModel()
-		m.Screen = ScreenMainMenu
-		m.Cursor = 3 // LazyVim Guide
+		m.Screen = ScreenLearnMenu
+		m.Cursor = 2 // LazyVim Guide
 
 		result, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
 		m = result.(Model)

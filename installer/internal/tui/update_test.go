@@ -246,9 +246,9 @@ func TestHandleMainMenuWithRestore(t *testing.T) {
 		m.AvailableBackups = []system.BackupInfo{
 			{Path: "/test/backup1"},
 		}
-		// Options: Start, Learn, Keymaps, LazyVim, Vim Trainer, Restore, Exit
-		// Restore is at index 5
-		m.Cursor = 5
+		// Options: Start, Learn & Practice, Restore, Init Project, Skill Manager, Exit
+		// Restore is at index 2
+		m.Cursor = 2
 
 		result, _ := m.handleMainMenuKeys("enter")
 		newModel := result.(Model)
@@ -262,9 +262,9 @@ func TestHandleMainMenuWithRestore(t *testing.T) {
 		m := NewModel()
 		m.Screen = ScreenMainMenu
 		m.AvailableBackups = []system.BackupInfo{} // No backups
-		// Options without restore: Start, Learn, Keymaps, LazyVim, Vim Trainer, Init Project, Skill Manager, Exit
-		// Exit is at index 7
-		m.Cursor = 7
+		// Options without restore: Start, Learn & Practice, Init Project, Skill Manager, Exit
+		// Exit is at index 4
+		m.Cursor = 4
 
 		_, cmd := m.handleMainMenuKeys("enter")
 
@@ -428,6 +428,150 @@ func TestCtrlCQuits(t *testing.T) {
 
 		if cmd == nil {
 			t.Error("Should return quit command")
+		}
+	})
+}
+
+func TestLearnMenuOptions(t *testing.T) {
+	t.Run("ScreenLearnMenu returns 6 items", func(t *testing.T) {
+		m := NewModel()
+		m.Screen = ScreenLearnMenu
+		opts := m.GetCurrentOptions()
+
+		// Learn About Tools, Keymaps Reference, LazyVim Guide, Vim Trainer, separator, Back = 6
+		if len(opts) != 6 {
+			t.Errorf("expected 6 options, got %d: %v", len(opts), opts)
+		}
+	})
+}
+
+func TestLearnMenuNavigation(t *testing.T) {
+	t.Run("Learn About Tools → ScreenLearnTerminals", func(t *testing.T) {
+		m := NewModel()
+		m.Screen = ScreenLearnMenu
+		m.Cursor = 0 // Learn About Tools
+
+		result, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+		nm := result.(Model)
+
+		if nm.Screen != ScreenLearnTerminals {
+			t.Errorf("expected ScreenLearnTerminals, got %d", nm.Screen)
+		}
+		if nm.PrevScreen != ScreenLearnMenu {
+			t.Errorf("expected PrevScreen=ScreenLearnMenu, got %d", nm.PrevScreen)
+		}
+	})
+
+	t.Run("Keymaps Reference → ScreenKeymapsMenu", func(t *testing.T) {
+		m := NewModel()
+		m.Screen = ScreenLearnMenu
+		m.Cursor = 1 // Keymaps Reference
+
+		result, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+		nm := result.(Model)
+
+		if nm.Screen != ScreenKeymapsMenu {
+			t.Errorf("expected ScreenKeymapsMenu, got %d", nm.Screen)
+		}
+		if nm.PrevScreen != ScreenLearnMenu {
+			t.Errorf("expected PrevScreen=ScreenLearnMenu, got %d", nm.PrevScreen)
+		}
+	})
+
+	t.Run("LazyVim Guide → ScreenLearnLazyVim", func(t *testing.T) {
+		m := NewModel()
+		m.Screen = ScreenLearnMenu
+		m.Cursor = 2 // LazyVim Guide
+
+		result, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+		nm := result.(Model)
+
+		if nm.Screen != ScreenLearnLazyVim {
+			t.Errorf("expected ScreenLearnLazyVim, got %d", nm.Screen)
+		}
+		if nm.PrevScreen != ScreenLearnMenu {
+			t.Errorf("expected PrevScreen=ScreenLearnMenu, got %d", nm.PrevScreen)
+		}
+	})
+
+	t.Run("Vim Trainer → ScreenTrainerMenu", func(t *testing.T) {
+		m := NewModel()
+		m.Screen = ScreenLearnMenu
+		m.Cursor = 3 // Vim Trainer
+
+		result, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+		nm := result.(Model)
+
+		if nm.Screen != ScreenTrainerMenu {
+			t.Errorf("expected ScreenTrainerMenu, got %d", nm.Screen)
+		}
+		if nm.PrevScreen != ScreenLearnMenu {
+			t.Errorf("expected PrevScreen=ScreenLearnMenu, got %d", nm.PrevScreen)
+		}
+		if nm.TrainerStats == nil {
+			t.Error("expected TrainerStats to be initialized")
+		}
+	})
+}
+
+func TestLearnMenuBack(t *testing.T) {
+	t.Run("Back option returns to ScreenMainMenu", func(t *testing.T) {
+		m := NewModel()
+		m.Screen = ScreenLearnMenu
+		m.Cursor = 5 // ← Back (after separator at 4)
+
+		result, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+		nm := result.(Model)
+
+		if nm.Screen != ScreenMainMenu {
+			t.Errorf("expected ScreenMainMenu, got %d", nm.Screen)
+		}
+	})
+
+	t.Run("Esc returns to ScreenMainMenu", func(t *testing.T) {
+		m := NewModel()
+		m.Screen = ScreenLearnMenu
+
+		result, _ := m.Update(tea.KeyMsg{Type: tea.KeyEsc})
+		nm := result.(Model)
+
+		if nm.Screen != ScreenMainMenu {
+			t.Errorf("expected ScreenMainMenu, got %d", nm.Screen)
+		}
+	})
+}
+
+func TestMainMenuLearnAndPractice(t *testing.T) {
+	t.Run("Learn & Practice goes to ScreenLearnMenu", func(t *testing.T) {
+		m := NewModel()
+		m.Screen = ScreenMainMenu
+		m.Cursor = 1 // Learn & Practice
+
+		result, _ := m.handleMainMenuKeys("enter")
+		nm := result.(Model)
+
+		if nm.Screen != ScreenLearnMenu {
+			t.Errorf("expected ScreenLearnMenu, got %d", nm.Screen)
+		}
+	})
+}
+
+func TestLearnMenuScreenTitleAndDescription(t *testing.T) {
+	t.Run("ScreenLearnMenu has title", func(t *testing.T) {
+		m := NewModel()
+		m.Screen = ScreenLearnMenu
+		title := m.GetScreenTitle()
+		if title == "" {
+			t.Error("expected non-empty title for ScreenLearnMenu")
+		}
+	})
+
+	t.Run("ScreenLearnMenu has description", func(t *testing.T) {
+		m := NewModel()
+		m.Screen = ScreenLearnMenu
+		desc := m.GetScreenDescription()
+		if desc == "" {
+			t.Error("expected non-empty description for ScreenLearnMenu")
 		}
 	})
 }

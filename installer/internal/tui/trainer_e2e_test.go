@@ -136,8 +136,14 @@ func TestTrainerNavigationE2E(t *testing.T) {
 	tm.Send(tea.KeyMsg{Type: tea.KeyEnter})
 	time.Sleep(50 * time.Millisecond)
 
-	// Main Menu -> Navigate to Vim Trainer (index 4: Start, Learn, Keymaps, LazyVim, Vim Trainer)
-	for i := 0; i < 4; i++ {
+	// Main Menu -> Navigate to "Learn & Practice" (index 1: Start, Learn & Practice)
+	tm.Send(tea.KeyMsg{Type: tea.KeyDown})
+	time.Sleep(20 * time.Millisecond)
+	tm.Send(tea.KeyMsg{Type: tea.KeyEnter})
+	time.Sleep(50 * time.Millisecond)
+
+	// Learn & Practice submenu -> Navigate to "Vim Trainer" (index 3: Learn About Tools, Keymaps, LazyVim, Vim Trainer)
+	for i := 0; i < 3; i++ {
 		tm.Send(tea.KeyMsg{Type: tea.KeyDown})
 		time.Sleep(20 * time.Millisecond)
 	}

@@ -698,10 +698,23 @@ func TestMainMenuToStartInstallation(t *testing.T) {
 	}
 }
 
-func TestMainMenuToLearnTools(t *testing.T) {
+func TestMainMenuToLearnAndPractice(t *testing.T) {
 	m := NewModel()
 	m.Screen = ScreenMainMenu
-	m.Cursor = 1 // Learn About Tools
+	m.Cursor = 1 // Learn & Practice
+
+	result, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	newModel := result.(Model)
+
+	if newModel.Screen != ScreenLearnMenu {
+		t.Errorf("Expected ScreenLearnMenu, got %v", newModel.Screen)
+	}
+}
+
+func TestLearnMenuToLearnTools(t *testing.T) {
+	m := NewModel()
+	m.Screen = ScreenLearnMenu
+	m.Cursor = 0 // Learn About Tools
 
 	result, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
 	newModel := result.(Model)
@@ -709,15 +722,15 @@ func TestMainMenuToLearnTools(t *testing.T) {
 	if newModel.Screen != ScreenLearnTerminals {
 		t.Errorf("Expected ScreenLearnTerminals, got %v", newModel.Screen)
 	}
-	if newModel.PrevScreen != ScreenMainMenu {
-		t.Error("PrevScreen should be MainMenu")
+	if newModel.PrevScreen != ScreenLearnMenu {
+		t.Error("PrevScreen should be ScreenLearnMenu")
 	}
 }
 
-func TestMainMenuToKeymaps(t *testing.T) {
+func TestLearnMenuToKeymaps(t *testing.T) {
 	m := NewModel()
-	m.Screen = ScreenMainMenu
-	m.Cursor = 2 // Keymaps Reference
+	m.Screen = ScreenLearnMenu
+	m.Cursor = 1 // Keymaps Reference
 
 	result, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
 	newModel := result.(Model)
@@ -727,10 +740,10 @@ func TestMainMenuToKeymaps(t *testing.T) {
 	}
 }
 
-func TestMainMenuToLazyVim(t *testing.T) {
+func TestLearnMenuToLazyVim(t *testing.T) {
 	m := NewModel()
-	m.Screen = ScreenMainMenu
-	m.Cursor = 3 // LazyVim Guide
+	m.Screen = ScreenLearnMenu
+	m.Cursor = 2 // LazyVim Guide
 
 	result, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
 	newModel := result.(Model)
@@ -746,7 +759,7 @@ func TestMainMenuToRestore(t *testing.T) {
 	m.AvailableBackups = []system.BackupInfo{
 		{Path: "/test", Timestamp: time.Now(), Files: []string{"test"}},
 	}
-	m.Cursor = 5 // Restore from Backup (after Vim Trainer)
+	m.Cursor = 2 // Restore from Backup (Start, Learn & Practice, Restore)
 
 	result, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
 	newModel := result.(Model)
