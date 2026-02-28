@@ -158,6 +158,11 @@ var (
 	// Dimmed code style for parts already passed
 	DimmedCodeStyle = lipgloss.NewStyle().
 			Foreground(TextMuted)
+
+	// Cursor style for project path input (inverted bg/fg)
+	CursorStyle = lipgloss.NewStyle().
+			Foreground(Background).
+			Background(Primary)
 )
 
 // CenterHorizontally centers text horizontally within a given width

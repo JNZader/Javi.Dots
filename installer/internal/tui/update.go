@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
@@ -982,8 +983,16 @@ func (m Model) handleEscape() (tea.Model, tea.Cmd) {
 		m.TrainerMessage = ""
 	// Project init screens
 	case ScreenProjectPath:
-		m.Screen = ScreenMainMenu
-		m.Cursor = 0
+		if m.ProjectPathMode != PathModeTyping {
+			// Close browser/completion, stay on screen
+			m.ProjectPathMode = PathModeTyping
+			m.ProjectPathCompletions = nil
+			m.ProjectPathCompIdx = -1
+			m.FileBrowserEntries = nil
+		} else {
+			m.Screen = ScreenMainMenu
+			m.Cursor = 0
+		}
 	case ScreenProjectResult:
 		m.Screen = ScreenMainMenu
 		m.Cursor = 0
@@ -1040,8 +1049,21 @@ func (m Model) handleMainMenuKeys(key string) (tea.Model, tea.Cmd) {
 			m.Screen = ScreenRestoreBackup
 			m.Cursor = 0
 		case strings.Contains(selected, "Initialize Project"):
-			m.ProjectPathInput = ""
+			cwd, err := os.Getwd()
+			if err != nil {
+				cwd = ""
+			}
+			m.ProjectPathInput = cwd
+			m.ProjectPathCursor = len([]rune(cwd))
 			m.ProjectPathError = ""
+			m.ProjectPathMode = PathModeTyping
+			m.ProjectPathCompletions = nil
+			m.ProjectPathCompIdx = -1
+			m.FileBrowserEntries = nil
+			m.FileBrowserCursor = 0
+			m.FileBrowserScroll = 0
+			m.FileBrowserRoot = ""
+			m.FileBrowserShowHidden = false
 			m.ProjectStack = ""
 			m.ProjectMemory = ""
 			m.ProjectEngram = false
@@ -3182,16 +3204,155 @@ func (m Model) handleTrainerBossResultKeys(key string) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-// handleProjectPathKeys handles text input for the project path screen
+// listDirectories lists subdirectories of parentDir that start with prefix.
+// It includes symlinks that point to directories.
+func listDirectories(parentDir, prefix string, showHidden bool) []string {
+	entries, err := os.ReadDir(parentDir)
+	if err != nil {
+		return nil
+	}
+	lowerPrefix := strings.ToLower(prefix)
+	var dirs []string
+	for _, e := range entries {
+		name := e.Name()
+		// Skip hidden files unless toggled
+		if !showHidden && strings.HasPrefix(name, ".") {
+			continue
+		}
+		// Check if directory or symlink-to-directory
+		isDir := e.IsDir()
+		if !isDir && e.Type()&os.ModeSymlink != 0 {
+			target, err := os.Stat(filepath.Join(parentDir, name))
+			if err == nil && target.IsDir() {
+				isDir = true
+			}
+		}
+		if !isDir {
+			continue
+		}
+		// Filter by prefix (case-insensitive)
+		if lowerPrefix != "" && !strings.HasPrefix(strings.ToLower(name), lowerPrefix) {
+			continue
+		}
+		dirs = append(dirs, name)
+	}
+	sort.Strings(dirs)
+	return dirs
+}
+
+// splitPathForCompletion splits the input into parent directory and prefix.
+// "/home/user/pro" → "/home/user", "pro"
+// "/home/user/"    → "/home/user", ""
+// ""               → home dir, ""
+func splitPathForCompletion(input string) (parentDir, prefix string) {
+	expanded := expandPath(input)
+	if expanded == "" {
+		home, err := os.UserHomeDir()
+		if err != nil {
+			return "/", ""
+		}
+		return home, ""
+	}
+	// If the input ends with /, the parent is the input itself
+	if strings.HasSuffix(expanded, "/") {
+		return filepath.Clean(expanded), ""
+	}
+	return filepath.Dir(expanded), filepath.Base(expanded)
+}
+
+// contractHome replaces the home directory prefix with ~ for display
+func contractHome(path string) string {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return path
+	}
+	if path == home {
+		return "~"
+	}
+	if strings.HasPrefix(path, home+"/") {
+		return "~" + path[len(home):]
+	}
+	return path
+}
+
+// handleProjectPathKeys dispatches to the appropriate mode handler
 func (m Model) handleProjectPathKeys(key string) (tea.Model, tea.Cmd) {
+	switch m.ProjectPathMode {
+	case PathModeCompletion:
+		return m.handlePathCompletionKeys(key)
+	case PathModeBrowser:
+		return m.handlePathBrowserKeys(key)
+	default:
+		return m.handlePathTypingKeys(key)
+	}
+}
+
+// handlePathTypingKeys handles keys in the normal typing mode
+func (m Model) handlePathTypingKeys(key string) (tea.Model, tea.Cmd) {
+	runes := []rune(m.ProjectPathInput)
+
 	switch key {
 	case "backspace":
-		if len(m.ProjectPathInput) > 0 {
-			// Remove last rune safely
-			runes := []rune(m.ProjectPathInput)
-			m.ProjectPathInput = string(runes[:len(runes)-1])
+		if m.ProjectPathCursor > 0 && len(runes) > 0 {
+			// Delete char before cursor
+			runes = append(runes[:m.ProjectPathCursor-1], runes[m.ProjectPathCursor:]...)
+			m.ProjectPathInput = string(runes)
+			m.ProjectPathCursor--
 		}
 		m.ProjectPathError = ""
+
+	case "delete":
+		if m.ProjectPathCursor < len(runes) {
+			runes = append(runes[:m.ProjectPathCursor], runes[m.ProjectPathCursor+1:]...)
+			m.ProjectPathInput = string(runes)
+		}
+		m.ProjectPathError = ""
+
+	case "left":
+		if m.ProjectPathCursor > 0 {
+			m.ProjectPathCursor--
+		}
+
+	case "right":
+		if m.ProjectPathCursor < len(runes) {
+			m.ProjectPathCursor++
+		}
+
+	case "home", "ctrl+a":
+		m.ProjectPathCursor = 0
+
+	case "end", "ctrl+e":
+		m.ProjectPathCursor = len(runes)
+
+	case "ctrl+u":
+		m.ProjectPathInput = ""
+		m.ProjectPathCursor = 0
+		m.ProjectPathError = ""
+
+	case "ctrl+w":
+		// Delete word backward (to prev /)
+		if m.ProjectPathCursor > 0 {
+			pos := m.ProjectPathCursor - 1
+			// Skip trailing /
+			for pos > 0 && runes[pos] == '/' {
+				pos--
+			}
+			// Find prev /
+			for pos > 0 && runes[pos-1] != '/' {
+				pos--
+			}
+			runes = append(runes[:pos], runes[m.ProjectPathCursor:]...)
+			m.ProjectPathInput = string(runes)
+			m.ProjectPathCursor = pos
+		}
+		m.ProjectPathError = ""
+
+	case "tab":
+		return m.triggerTabCompletion()
+
+	case "ctrl+b":
+		return m.openFileBrowser()
+
 	case "enter":
 		// Validate path
 		path := expandPath(m.ProjectPathInput)
@@ -3219,16 +3380,194 @@ func (m Model) handleProjectPathKeys(key string) (tea.Model, tea.Cmd) {
 		m.ProjectStack = detectStack(absPath)
 		m.Screen = ScreenProjectStack
 		m.Cursor = 0
+
 	case " ":
-		m.ProjectPathInput += " "
+		// Insert space at cursor
+		runes = append(runes[:m.ProjectPathCursor], append([]rune{' '}, runes[m.ProjectPathCursor:]...)...)
+		m.ProjectPathInput = string(runes)
+		m.ProjectPathCursor++
 		m.ProjectPathError = ""
+
 	default:
-		// Append printable character
+		// Insert printable character at cursor position
 		if len(key) == 1 && key[0] >= 32 && key[0] <= 126 {
-			m.ProjectPathInput += key
+			r := []rune(key)
+			runes = append(runes[:m.ProjectPathCursor], append(r, runes[m.ProjectPathCursor:]...)...)
+			m.ProjectPathInput = string(runes)
+			m.ProjectPathCursor++
 			m.ProjectPathError = ""
 		}
 	}
+	return m, nil
+}
+
+// triggerTabCompletion triggers tab-completion for the current input
+func (m Model) triggerTabCompletion() (tea.Model, tea.Cmd) {
+	parentDir, prefix := splitPathForCompletion(m.ProjectPathInput)
+	matches := listDirectories(parentDir, prefix, m.FileBrowserShowHidden)
+
+	switch len(matches) {
+	case 0:
+		m.ProjectPathError = "No matching directories"
+	case 1:
+		// Auto-complete inline
+		completed := filepath.Join(parentDir, matches[0]) + "/"
+		m.ProjectPathInput = completed
+		m.ProjectPathCursor = len([]rune(completed))
+		m.ProjectPathError = ""
+	default:
+		// Show dropdown
+		m.ProjectPathCompletions = matches
+		m.ProjectPathCompIdx = 0
+		m.ProjectPathMode = PathModeCompletion
+		m.ProjectPathError = ""
+	}
+	return m, nil
+}
+
+// handlePathCompletionKeys handles keys in the completion dropdown mode
+func (m Model) handlePathCompletionKeys(key string) (tea.Model, tea.Cmd) {
+	switch key {
+	case "up", "k":
+		if m.ProjectPathCompIdx > 0 {
+			m.ProjectPathCompIdx--
+		}
+	case "down", "j":
+		if m.ProjectPathCompIdx < len(m.ProjectPathCompletions)-1 {
+			m.ProjectPathCompIdx++
+		}
+	case "enter", "tab":
+		// Select highlighted completion
+		if m.ProjectPathCompIdx >= 0 && m.ProjectPathCompIdx < len(m.ProjectPathCompletions) {
+			parentDir, _ := splitPathForCompletion(m.ProjectPathInput)
+			selected := m.ProjectPathCompletions[m.ProjectPathCompIdx]
+			completed := filepath.Join(parentDir, selected) + "/"
+			m.ProjectPathInput = completed
+			m.ProjectPathCursor = len([]rune(completed))
+		}
+		m.ProjectPathMode = PathModeTyping
+		m.ProjectPathCompletions = nil
+		m.ProjectPathCompIdx = -1
+	case "esc":
+		m.ProjectPathMode = PathModeTyping
+		m.ProjectPathCompletions = nil
+		m.ProjectPathCompIdx = -1
+	default:
+		// Any other key: back to typing + re-process
+		m.ProjectPathMode = PathModeTyping
+		m.ProjectPathCompletions = nil
+		m.ProjectPathCompIdx = -1
+		return m.handlePathTypingKeys(key)
+	}
+	return m, nil
+}
+
+// openFileBrowser opens the file browser mode
+func (m Model) openFileBrowser() (tea.Model, tea.Cmd) {
+	// Determine root directory
+	root := expandPath(m.ProjectPathInput)
+	if root == "" {
+		home, err := os.UserHomeDir()
+		if err != nil {
+			root = "/"
+		} else {
+			root = home
+		}
+	}
+	// Ensure root is a directory
+	info, err := os.Stat(root)
+	if err != nil || !info.IsDir() {
+		root = filepath.Dir(root)
+	}
+	root = filepath.Clean(root)
+
+	entries := listDirectories(root, "", m.FileBrowserShowHidden)
+	m.FileBrowserRoot = root
+	m.FileBrowserEntries = entries
+	m.FileBrowserCursor = 0
+	m.FileBrowserScroll = 0
+	m.ProjectPathMode = PathModeBrowser
+	return m, nil
+}
+
+// handlePathBrowserKeys handles keys in the file browser mode
+func (m Model) handlePathBrowserKeys(key string) (tea.Model, tea.Cmd) {
+	// Browser list: [0] Select this dir, [1] ../, [2..] subdirs
+	totalItems := len(m.FileBrowserEntries) + 2 // +2 for "select" and "../"
+
+	switch key {
+	case "up", "k":
+		if m.FileBrowserCursor > 0 {
+			m.FileBrowserCursor--
+		}
+	case "down", "j":
+		if m.FileBrowserCursor < totalItems-1 {
+			m.FileBrowserCursor++
+		}
+	case "enter", "l", "right":
+		switch m.FileBrowserCursor {
+		case 0:
+			// Select this directory
+			m.ProjectPathInput = m.FileBrowserRoot
+			m.ProjectPathCursor = len([]rune(m.ProjectPathInput))
+			m.ProjectPathMode = PathModeTyping
+			m.FileBrowserEntries = nil
+		case 1:
+			// Go to parent
+			parent := filepath.Dir(m.FileBrowserRoot)
+			if parent != m.FileBrowserRoot {
+				m.FileBrowserRoot = parent
+				m.FileBrowserEntries = listDirectories(parent, "", m.FileBrowserShowHidden)
+				m.FileBrowserCursor = 0
+				m.FileBrowserScroll = 0
+			}
+		default:
+			// Drill into subdirectory
+			idx := m.FileBrowserCursor - 2
+			if idx >= 0 && idx < len(m.FileBrowserEntries) {
+				newRoot := filepath.Join(m.FileBrowserRoot, m.FileBrowserEntries[idx])
+				entries := listDirectories(newRoot, "", m.FileBrowserShowHidden)
+				m.FileBrowserRoot = newRoot
+				m.FileBrowserEntries = entries
+				m.FileBrowserCursor = 0
+				m.FileBrowserScroll = 0
+			}
+		}
+	case "h", "left":
+		// Go to parent directory
+		parent := filepath.Dir(m.FileBrowserRoot)
+		if parent != m.FileBrowserRoot {
+			m.FileBrowserRoot = parent
+			m.FileBrowserEntries = listDirectories(parent, "", m.FileBrowserShowHidden)
+			m.FileBrowserCursor = 0
+			m.FileBrowserScroll = 0
+		}
+	case "esc", "ctrl+b":
+		// Close browser
+		m.ProjectPathMode = PathModeTyping
+		m.FileBrowserEntries = nil
+	case ".":
+		// Toggle hidden files
+		m.FileBrowserShowHidden = !m.FileBrowserShowHidden
+		m.FileBrowserEntries = listDirectories(m.FileBrowserRoot, "", m.FileBrowserShowHidden)
+		m.FileBrowserCursor = 0
+		m.FileBrowserScroll = 0
+	}
+
+	// Update scroll to keep cursor visible
+	if m.ProjectPathMode == PathModeBrowser {
+		visibleLines := m.Height - 12
+		if visibleLines < 3 {
+			visibleLines = 3
+		}
+		if m.FileBrowserCursor < m.FileBrowserScroll {
+			m.FileBrowserScroll = m.FileBrowserCursor
+		}
+		if m.FileBrowserCursor >= m.FileBrowserScroll+visibleLines {
+			m.FileBrowserScroll = m.FileBrowserCursor - visibleLines + 1
+		}
+	}
+
 	return m, nil
 }
 

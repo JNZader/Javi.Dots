@@ -83,6 +83,13 @@ const (
 	ScreenSkillUpdate  // Updating catalog (git pull)
 )
 
+// Path input modes
+const (
+	PathModeTyping     = 0
+	PathModeCompletion = 1
+	PathModeBrowser    = 2
+)
+
 // InstallStep represents a single installation step
 type InstallStep struct {
 	ID          string
@@ -198,6 +205,17 @@ type Model struct {
 	ProjectEngram    bool
 	ProjectCI        string
 	ProjectLogLines  []string
+	// Project path enhanced input
+	ProjectPathCursor      int      // cursor position within rune slice
+	ProjectPathMode        int      // 0=typing, 1=completion, 2=browser
+	ProjectPathCompletions []string // tab-completion matches
+	ProjectPathCompIdx     int      // highlighted completion (-1 = none)
+	// File browser
+	FileBrowserEntries    []string // directory names in current listed dir
+	FileBrowserCursor     int      // highlighted entry in browser list
+	FileBrowserScroll     int      // scroll offset for long listings
+	FileBrowserRoot       string   // absolute path being browsed
+	FileBrowserShowHidden bool     // show dotfiles toggle
 	// Skill manager
 	SkillCatalog   []SkillInfo // full catalog from fetchSkillCatalog
 	SkillSelected  []bool      // selection state (reused per screen)
@@ -251,13 +269,22 @@ func NewModel() Model {
 		TrainerLastCorrect: false,
 		TrainerMessage:     "",
 		// Project init
-		ProjectPathInput: "",
-		ProjectPathError: "",
-		ProjectStack:     "",
-		ProjectMemory:    "",
-		ProjectEngram:    false,
-		ProjectCI:        "",
-		ProjectLogLines:  []string{},
+		ProjectPathInput:       "",
+		ProjectPathError:       "",
+		ProjectStack:           "",
+		ProjectMemory:          "",
+		ProjectEngram:          false,
+		ProjectCI:              "",
+		ProjectLogLines:        []string{},
+		ProjectPathCursor:      0,
+		ProjectPathMode:        PathModeTyping,
+		ProjectPathCompletions: nil,
+		ProjectPathCompIdx:     -1,
+		FileBrowserEntries:     nil,
+		FileBrowserCursor:      0,
+		FileBrowserScroll:      0,
+		FileBrowserRoot:        "",
+		FileBrowserShowHidden:  false,
 		// Skill manager
 		SkillCatalog:   []SkillInfo{},
 		SkillSelected:  []bool{},

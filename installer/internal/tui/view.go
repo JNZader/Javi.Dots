@@ -2193,16 +2193,150 @@ func (m Model) renderProjectPath() string {
 		s.WriteString(MutedStyle.Render(desc))
 		s.WriteString("\n\n")
 	}
-	// Input line with cursor block
-	s.WriteString("  > " + m.ProjectPathInput + "█")
+
+	switch m.ProjectPathMode {
+	case PathModeCompletion:
+		s.WriteString(m.renderPathCompletion())
+	case PathModeBrowser:
+		s.WriteString(m.renderPathBrowser())
+	default:
+		s.WriteString(m.renderPathTyping())
+	}
+
+	return s.String()
+}
+
+// renderPathTyping renders the typing mode input line with cursor
+func (m Model) renderPathTyping() string {
+	var s strings.Builder
+
+	runes := []rune(m.ProjectPathInput)
+	cursor := m.ProjectPathCursor
+	if cursor > len(runes) {
+		cursor = len(runes)
+	}
+
+	// Build input with cursor
+	s.WriteString("  > ")
+	if cursor < len(runes) {
+		s.WriteString(string(runes[:cursor]))
+		s.WriteString(CursorStyle.Render(string(runes[cursor])))
+		if cursor+1 < len(runes) {
+			s.WriteString(string(runes[cursor+1:]))
+		}
+	} else {
+		s.WriteString(string(runes))
+		s.WriteString(CursorStyle.Render(" "))
+	}
 	s.WriteString("\n")
+
 	if m.ProjectPathError != "" {
 		s.WriteString("\n")
 		s.WriteString(ErrorStyle.Render("  ⚠ " + m.ProjectPathError))
 		s.WriteString("\n")
 	}
 	s.WriteString("\n")
-	s.WriteString(HelpStyle.Render("  Enter: confirm  •  Esc: cancel  •  Type the full path"))
+	s.WriteString(HelpStyle.Render("  Tab: complete  •  Ctrl+B: browse  •  Enter: confirm  •  Esc: cancel"))
+	return s.String()
+}
+
+// renderPathCompletion renders the completion dropdown
+func (m Model) renderPathCompletion() string {
+	var s strings.Builder
+
+	// Show the current input
+	s.WriteString("  > " + m.ProjectPathInput)
+	s.WriteString("\n\n")
+	s.WriteString(MutedStyle.Render("  Matches:"))
+	s.WriteString("\n")
+
+	maxVisible := 8
+	total := len(m.ProjectPathCompletions)
+	start := 0
+	if total > maxVisible && m.ProjectPathCompIdx >= maxVisible {
+		start = m.ProjectPathCompIdx - maxVisible + 1
+	}
+	end := start + maxVisible
+	if end > total {
+		end = total
+	}
+
+	if start > 0 {
+		s.WriteString(MutedStyle.Render("    ↑ more"))
+		s.WriteString("\n")
+	}
+
+	for i := start; i < end; i++ {
+		if i == m.ProjectPathCompIdx {
+			s.WriteString(SelectedStyle.Render("▸ " + m.ProjectPathCompletions[i] + "/"))
+		} else {
+			s.WriteString(UnselectedStyle.Render(m.ProjectPathCompletions[i] + "/"))
+		}
+		s.WriteString("\n")
+	}
+
+	if end < total {
+		s.WriteString(MutedStyle.Render("    ↓ more"))
+		s.WriteString("\n")
+	}
+
+	s.WriteString("\n")
+	s.WriteString(HelpStyle.Render("  ↑/↓: navigate  •  Enter/Tab: select  •  Esc: cancel"))
+	return s.String()
+}
+
+// renderPathBrowser renders the file browser mode
+func (m Model) renderPathBrowser() string {
+	var s strings.Builder
+
+	displayRoot := contractHome(m.FileBrowserRoot)
+	s.WriteString(InfoStyle.Render("  Browsing: " + displayRoot))
+	s.WriteString("\n\n")
+
+	// Build items: [0] select, [1] ../, [2..] entries
+	type item struct {
+		label string
+	}
+	items := []item{
+		{label: "✅ Select this directory"},
+		{label: "⬆️  ../"},
+	}
+	for _, e := range m.FileBrowserEntries {
+		items = append(items, item{label: "📁 " + e + "/"})
+	}
+
+	// Scrolling
+	visibleLines := m.Height - 12
+	if visibleLines < 3 {
+		visibleLines = 3
+	}
+	start := m.FileBrowserScroll
+	end := start + visibleLines
+	if end > len(items) {
+		end = len(items)
+	}
+
+	if start > 0 {
+		s.WriteString(MutedStyle.Render("    ↑ more"))
+		s.WriteString("\n")
+	}
+
+	for i := start; i < end; i++ {
+		if i == m.FileBrowserCursor {
+			s.WriteString(SelectedStyle.Render("▸ " + items[i].label))
+		} else {
+			s.WriteString(UnselectedStyle.Render(items[i].label))
+		}
+		s.WriteString("\n")
+	}
+
+	if end < len(items) {
+		s.WriteString(MutedStyle.Render("    ↓ more"))
+		s.WriteString("\n")
+	}
+
+	s.WriteString("\n")
+	s.WriteString(HelpStyle.Render("  j/↓ k/↑: move  •  Enter/l: open  •  h: up  •  .: hidden  •  Esc: close"))
 	return s.String()
 }
 
