@@ -1083,14 +1083,7 @@ func stepInstallAITools(m *Model) error {
 		system.CopyFile(filepath.Join(repoDir, "GentlemanClaude/output-styles/gentleman.md"), filepath.Join(claudeDir, "output-styles/gentleman.md"))
 		system.CopyFile(filepath.Join(repoDir, "GentlemanClaude/mcp-servers.template.json"), filepath.Join(claudeDir, "mcp-servers.template.json"))
 		system.CopyFile(filepath.Join(repoDir, "GentlemanClaude/tweakcc-theme.json"), filepath.Join(claudeDir, "tweakcc-theme.json"))
-		skillsToCopy := []string{"ai-sdk-5", "django-drf", "nextjs-15", "playwright", "pytest", "react-19", "tailwind-4", "typescript", "zod-4", "zustand-5"}
-		for _, skill := range skillsToCopy {
-			skillSrc := filepath.Join(repoDir, "GentlemanClaude/skills", skill)
-			skillDst := filepath.Join(claudeDir, "skills", skill)
-			system.EnsureDir(skillDst)
-			system.CopyFile(filepath.Join(skillSrc, "SKILL.md"), filepath.Join(skillDst, "SKILL.md"))
-		}
-		SendLog(stepID, "⚙️ Copied CLAUDE.md, statusline, output styles, skills")
+		SendLog(stepID, "⚙️ Copied CLAUDE.md, statusline, output styles, config")
 
 		SendLog(stepID, "Applying tweakcc theme...")
 		result := system.Run("npx tweakcc --apply", nil)
@@ -1112,11 +1105,9 @@ func stepInstallAITools(m *Model) error {
 		openCodeDir := filepath.Join(homeDir, ".config/opencode")
 		system.EnsureDir(openCodeDir)
 		system.EnsureDir(filepath.Join(openCodeDir, "themes"))
-		system.EnsureDir(filepath.Join(openCodeDir, "skill"))
 		system.CopyFile(filepath.Join(repoDir, "GentlemanOpenCode/opencode.json"), filepath.Join(openCodeDir, "opencode.json"))
 		system.CopyFile(filepath.Join(repoDir, "GentlemanOpenCode/themes/gentleman.json"), filepath.Join(openCodeDir, "themes/gentleman.json"))
-		system.CopyDir(filepath.Join(repoDir, "GentlemanOpenCode", "skill"), filepath.Join(openCodeDir, "skill"))
-		SendLog(stepID, "🧠 Copied OpenCode config and skills")
+		SendLog(stepID, "🧠 Copied OpenCode config")
 	}
 
 	// Install Gemini CLI
@@ -1146,22 +1137,11 @@ func stepInstallAITools(m *Model) error {
 
 		SendLog(stepID, "Configuring Codex CLI...")
 		codexDir := filepath.Join(homeDir, ".codex")
-		agentsSkillsDir := filepath.Join(homeDir, ".agents", "skills")
 		system.EnsureDir(codexDir)
-		system.EnsureDir(agentsSkillsDir)
 
 		// Copy CLAUDE.md as AGENTS.md (Codex reads AGENTS.md for instructions)
 		system.CopyFile(filepath.Join(repoDir, "GentlemanClaude/CLAUDE.md"), filepath.Join(codexDir, "AGENTS.md"))
-
-		// Copy skills to ~/.agents/skills/ (Codex global skill discovery path)
-		skillsToCopy := []string{"ai-sdk-5", "django-drf", "nextjs-15", "playwright", "pytest", "react-19", "tailwind-4", "typescript", "zod-4", "zustand-5"}
-		for _, skill := range skillsToCopy {
-			skillSrc := filepath.Join(repoDir, "GentlemanClaude/skills", skill)
-			skillDst := filepath.Join(agentsSkillsDir, skill)
-			system.EnsureDir(skillDst)
-			system.CopyFile(filepath.Join(skillSrc, "SKILL.md"), filepath.Join(skillDst, "SKILL.md"))
-		}
-		SendLog(stepID, "⚙️ Copied AGENTS.md, skills to ~/.agents/skills/")
+		SendLog(stepID, "⚙️ Copied AGENTS.md to ~/.codex/")
 	}
 
 	// Install GitHub Copilot CLI extension
@@ -1177,7 +1157,125 @@ func stepInstallAITools(m *Model) error {
 		}
 	}
 
+	// Centralize skills from Gentleman-Skills repo
+	if err := setupCentralizedSkills(m); err != nil {
+		SendLog(stepID, fmt.Sprintf("⚠️ Centralized skills setup failed: %v", err))
+	}
+
 	SendLog(stepID, "✓ AI tools configured")
+	return nil
+}
+
+// setupCentralizedSkills clones Gentleman-Skills repo to ~/.gentleman/skills/ and
+// creates symlinks into each CLI's skill discovery path.
+// Central source: ~/.gentleman/skills/ (curated/ + community/)
+// Claude:              ~/.claude/skills/<name>  → central/<name>
+// OpenCode/Codex/Gemini: ~/.agents/skills/<name> → central/<name>
+func setupCentralizedSkills(m *Model) error {
+	homeDir := os.Getenv("HOME")
+	stepID := "aitools"
+	centralDir := filepath.Join(homeDir, ".gentleman", "skills")
+
+	// Determine if any CLI needs skills
+	needsClaude := hasAITool(m.Choices.AITools, "claude")
+	needsAgents := hasAITool(m.Choices.AITools, "opencode") ||
+		hasAITool(m.Choices.AITools, "codex") ||
+		hasAITool(m.Choices.AITools, "gemini")
+
+	if !needsClaude && !needsAgents {
+		return nil
+	}
+
+	SendLog(stepID, "Setting up centralized skills...")
+
+	// Clone or update Gentleman-Skills repo
+	needsClone := true
+	if info, err := os.Stat(centralDir); err == nil {
+		if time.Since(info.ModTime()) < time.Hour {
+			needsClone = false
+			SendLog(stepID, "Using cached Gentleman-Skills repo")
+		} else {
+			os.RemoveAll(centralDir)
+		}
+	}
+
+	if needsClone {
+		SendLog(stepID, "Cloning Gentleman-Skills...")
+		system.EnsureDir(filepath.Join(homeDir, ".gentleman"))
+		result := system.RunWithLogs(
+			"git clone --depth 1 https://github.com/Gentleman-Programming/Gentleman-Skills.git "+centralDir,
+			nil, func(line string) { SendLog(stepID, line) },
+		)
+		if result.Error != nil {
+			return fmt.Errorf("failed to clone Gentleman-Skills: %w", result.Error)
+		}
+	}
+
+	// Discover all skill directories (curated/ and community/)
+	var skillPaths []string
+	for _, subdir := range []string{"curated", "community"} {
+		dir := filepath.Join(centralDir, subdir)
+		entries, err := os.ReadDir(dir)
+		if err != nil {
+			continue
+		}
+		for _, entry := range entries {
+			if !entry.IsDir() {
+				continue
+			}
+			// Verify it has a SKILL.md
+			skillFile := filepath.Join(dir, entry.Name(), "SKILL.md")
+			if _, err := os.Stat(skillFile); err == nil {
+				skillPaths = append(skillPaths, filepath.Join(dir, entry.Name()))
+			}
+		}
+	}
+
+	if len(skillPaths) == 0 {
+		SendLog(stepID, "⚠️ No skills found in Gentleman-Skills repo")
+		return nil
+	}
+
+	SendLog(stepID, fmt.Sprintf("Found %d skills in Gentleman-Skills", len(skillPaths)))
+
+	// Create symlinks for Claude (~/.claude/skills/<name>)
+	if needsClaude {
+		claudeSkillsDir := filepath.Join(homeDir, ".claude", "skills")
+		system.EnsureDir(claudeSkillsDir)
+		linked := 0
+		for _, sp := range skillPaths {
+			name := filepath.Base(sp)
+			dst := filepath.Join(claudeSkillsDir, name)
+			// Remove existing (file, dir, or stale symlink)
+			os.RemoveAll(dst)
+			if err := os.Symlink(sp, dst); err != nil {
+				SendLog(stepID, fmt.Sprintf("⚠️ Could not symlink %s for Claude: %v", name, err))
+			} else {
+				linked++
+			}
+		}
+		SendLog(stepID, fmt.Sprintf("🔗 Linked %d skills → ~/.claude/skills/", linked))
+	}
+
+	// Create symlinks for OpenCode/Codex/Gemini (~/.agents/skills/<name>)
+	if needsAgents {
+		agentsSkillsDir := filepath.Join(homeDir, ".agents", "skills")
+		system.EnsureDir(agentsSkillsDir)
+		linked := 0
+		for _, sp := range skillPaths {
+			name := filepath.Base(sp)
+			dst := filepath.Join(agentsSkillsDir, name)
+			// Remove existing (file, dir, or stale symlink)
+			os.RemoveAll(dst)
+			if err := os.Symlink(sp, dst); err != nil {
+				SendLog(stepID, fmt.Sprintf("⚠️ Could not symlink %s for agents: %v", name, err))
+			} else {
+				linked++
+			}
+		}
+		SendLog(stepID, fmt.Sprintf("🔗 Linked %d skills → ~/.agents/skills/", linked))
+	}
+
 	return nil
 }
 
