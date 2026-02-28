@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Javi.Dots</title>
+  <meta name="description" content="Personal dotfiles & TUI installer for terminal, shell, Neovim, and AI tools.">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/docsify-themeable@0/dist/css/theme-simple-dark.css">
+  <style>
+    :root {
+      --theme-color: #7aa2f7;
+      --sidebar-background: #1a1b26;
+      --sidebar-nav-link-color--active: #7aa2f7;
+      --sidebar-name-color: #c0caf5;
+      --base-background-color: #1a1b26;
+      --base-color: #a9b1d6;
+      --heading-color: #c0caf5;
+      --code-theme-background: #24283b;
+      --code-inline-background: #24283b;
+      --code-inline-color: #7aa2f7;
+      --blockquote-border-color: #7aa2f7;
+      --link-color: #7aa2f7;
+      --link-color--hover: #bb9af7;
+      --table-row-even-background: #24283b;
+    }
+    .sidebar-nav > ul > li > a {
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+  <script>
+    window.$docsify = {
+      name: 'Javi.Dots',
+      repo: 'https://github.com/JNZader/Javi.Dots',
+      loadSidebar: true,
+      subMaxLevel: 2,
+      auto2top: true,
+      homepage: '../README.md',
+      alias: {
+        '/es': '../README.es.md'
+      },
+      search: {
+        placeholder: 'Search docs...',
+        noData: 'No results.',
+        paths: 'auto'
+      },
+      copyCode: {
+        buttonText: 'Copy',
+        successText: 'Copied!'
+      }
+    }
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/docsify@4/lib/docsify.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/docsify@4/lib/plugins/search.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/docsify-copy-code@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1/components/prism-bash.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1/components/prism-go.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1/components/prism-yaml.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1/components/prism-toml.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1/components/prism-lua.min.js"></script>
+</body>
+</html>
