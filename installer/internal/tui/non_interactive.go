@@ -7,8 +7,9 @@ import (
 	"github.com/Gentleman-Programming/Gentleman.Dots/installer/internal/system"
 )
 
-// RunNonInteractive executes the installation without TUI
-func RunNonInteractive(choices UserChoices) error {
+// RunNonInteractive executes the installation without TUI.
+// repoDir overrides the default repo directory name used for cloning.
+func RunNonInteractive(choices UserChoices, repoDir string) error {
 	// Enable non-interactive mode for logging
 	SetNonInteractiveMode(true)
 
@@ -26,6 +27,7 @@ func RunNonInteractive(choices UserChoices) error {
 	model := &Model{
 		SystemInfo: sysInfo,
 		Choices:    choices,
+		RepoDir:    repoDir,
 		LogLines:   []string{},
 	}
 

@@ -39,6 +39,7 @@ type cliFlags struct {
 	projectEngram  bool
 	skillInstall   string // comma-separated skill names to install
 	skillRemove    string // comma-separated skill names to remove
+	repoDir        string // override repo directory name
 }
 
 func parseFlags() *cliFlags {
@@ -71,6 +72,7 @@ func parseFlags() *cliFlags {
 	flag.BoolVar(&flags.projectEngram, "project-engram", false, "Add Engram alongside Obsidian Brain")
 	flag.StringVar(&flags.skillInstall, "skill-install", "", "Skills to install (comma-separated)")
 	flag.StringVar(&flags.skillRemove, "skill-remove", "", "Skills to remove (comma-separated)")
+	flag.StringVar(&flags.repoDir, "repo-dir", "", "Override repo directory name (default: Gentleman.Dots, env: REPO_DIR)")
 
 	flag.Parse()
 	return flags
@@ -109,6 +111,14 @@ func main() {
 
 	// Interactive TUI mode
 	model := tui.NewModel()
+
+	// Override repo dir: flag > env > default
+	if flags.repoDir != "" {
+		model.RepoDir = flags.repoDir
+	} else if env := os.Getenv("REPO_DIR"); env != "" {
+		model.RepoDir = env
+	}
+
 	p := tea.NewProgram(
 		model,
 		tea.WithAltScreen(),
@@ -360,8 +370,16 @@ func runNonInteractive(flags *cliFlags) error {
 	fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
 	fmt.Println()
 
+	// Resolve repo dir: flag > env > default
+	repoDir := tui.DefaultRepoDir
+	if flags.repoDir != "" {
+		repoDir = flags.repoDir
+	} else if env := os.Getenv("REPO_DIR"); env != "" {
+		repoDir = env
+	}
+
 	// Run the installation
-	return tui.RunNonInteractive(choices)
+	return tui.RunNonInteractive(choices, repoDir)
 }
 
 func setupTestMode() {
@@ -406,6 +424,7 @@ Flags:
   --non-interactive    Run without TUI, use CLI flags instead
 
 Non-Interactive Options:
+  --repo-dir=<dir>     Override repo directory name (default: Gentleman.Dots, env: REPO_DIR)
   --shell=<shell>      Shell to install (required): fish, zsh, nushell
   --terminal=<term>    Terminal: alacritty, wezterm, kitty, ghostty, none
   --wm=<wm>            Window manager: tmux, zellij, none

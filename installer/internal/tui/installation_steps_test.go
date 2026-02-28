@@ -165,8 +165,8 @@ func TestStepCloneRepository(t *testing.T) {
 
 		err := stepCloneRepo(&m)
 
-		// Check if Gentleman.Dots directory exists
-		if _, statErr := os.Stat(filepath.Join(tmpDir, "Gentleman.Dots")); os.IsNotExist(statErr) {
+		// Check if repo directory exists
+		if _, statErr := os.Stat(filepath.Join(tmpDir, DefaultRepoDir)); os.IsNotExist(statErr) {
 			if err == nil {
 				t.Error("Clone reported success but directory doesn't exist")
 			}

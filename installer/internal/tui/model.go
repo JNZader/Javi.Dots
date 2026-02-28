@@ -10,6 +10,9 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
+// DefaultRepoDir is the default directory name for the cloned repository.
+const DefaultRepoDir = "Gentleman.Dots"
+
 // Screen represents the current screen being displayed
 type Screen int
 
@@ -146,6 +149,7 @@ type Model struct {
 	Height      int
 	SystemInfo  *system.SystemInfo
 	Choices     UserChoices
+	RepoDir     string // Directory name for the cloned repo (overridable for forks)
 	Steps       []InstallStep
 	CurrentStep int
 	Cursor      int
@@ -236,6 +240,7 @@ func NewModel() Model {
 		Height:                  24,
 		SystemInfo:              system.Detect(),
 		Choices:                 UserChoices{},
+		RepoDir:                 DefaultRepoDir,
 		Steps:                   []InstallStep{},
 		CurrentStep:             0,
 		Cursor:                  0,

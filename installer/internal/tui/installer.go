@@ -110,22 +110,23 @@ func stepBackupConfigs(m *Model) error {
 
 func stepCloneRepo(m *Model) error {
 	stepID := "clone"
+	repoDir := m.RepoDir
 
 	// Check if already exists
-	if _, err := os.Stat("Gentleman.Dots"); err == nil {
-		SendLog(stepID, "Removing existing Gentleman.Dots directory...")
-		result := system.RunWithLogs("rm -rf Gentleman.Dots", nil, func(line string) {
+	if _, err := os.Stat(repoDir); err == nil {
+		SendLog(stepID, "Removing existing "+repoDir+" directory...")
+		result := system.RunWithLogs("rm -rf "+repoDir, nil, func(line string) {
 			SendLog(stepID, line)
 		})
 		if result.Error != nil {
 			return wrapStepError("clone", "Clone Repository",
-				"Failed to remove existing Gentleman.Dots directory",
+				"Failed to remove existing "+repoDir+" directory",
 				result.Error)
 		}
 	}
 
 	SendLog(stepID, "Cloning repository from GitHub...")
-	result := system.RunWithLogs("git clone --progress https://github.com/Gentleman-Programming/Gentleman.Dots.git Gentleman.Dots", nil, func(line string) {
+	result := system.RunWithLogs("git clone --progress https://github.com/Gentleman-Programming/Gentleman.Dots.git "+repoDir, nil, func(line string) {
 		SendLog(stepID, line)
 	})
 	if result.Error != nil {
@@ -135,10 +136,10 @@ func stepCloneRepo(m *Model) error {
 	}
 
 	// Verify clone was successful
-	if _, err := os.Stat("Gentleman.Dots"); os.IsNotExist(err) {
+	if _, err := os.Stat(repoDir); os.IsNotExist(err) {
 		return wrapStepError("clone", "Clone Repository",
 			"Repository was cloned but directory not found",
-			fmt.Errorf("Gentleman.Dots directory does not exist after clone"))
+			fmt.Errorf("%s directory does not exist after clone", repoDir))
 	}
 
 	SendLog(stepID, "✓ Repository cloned successfully")
@@ -289,7 +290,7 @@ func stepInstallXcode(m *Model) error {
 func stepInstallTerminal(m *Model) error {
 	terminal := m.Choices.Terminal
 	homeDir := os.Getenv("HOME")
-	repoDir := "Gentleman.Dots"
+	repoDir := m.RepoDir
 	stepID := "terminal"
 
 	switch terminal {
@@ -606,7 +607,7 @@ func stepInstallFont(m *Model) error {
 
 func stepInstallShell(m *Model) error {
 	homeDir := os.Getenv("HOME")
-	repoDir := "Gentleman.Dots"
+	repoDir := m.RepoDir
 	shell := m.Choices.Shell
 	stepID := "shell"
 
@@ -812,7 +813,7 @@ func stepInstallShell(m *Model) error {
 
 func stepInstallWM(m *Model) error {
 	homeDir := os.Getenv("HOME")
-	repoDir := "Gentleman.Dots"
+	repoDir := m.RepoDir
 	wm := m.Choices.WindowMgr
 	stepID := "wm"
 
@@ -981,7 +982,7 @@ func stepInstallWM(m *Model) error {
 
 func stepInstallNvim(m *Model) error {
 	homeDir := os.Getenv("HOME")
-	repoDir := "Gentleman.Dots"
+	repoDir := m.RepoDir
 	stepID := "nvim"
 
 	// Obsidian app installation (if user opted in)
@@ -1083,7 +1084,7 @@ func stepInstallNvim(m *Model) error {
 
 func stepInstallZed(m *Model) error {
 	homeDir := os.Getenv("HOME")
-	repoDir := "Gentleman.Dots"
+	repoDir := m.RepoDir
 	stepID := "zed"
 
 	// Skip on Termux — Zed requires GUI with Vulkan
@@ -1156,7 +1157,7 @@ func hasAITool(tools []string, name string) bool {
 
 func stepInstallAITools(m *Model) error {
 	homeDir := os.Getenv("HOME")
-	repoDir := "Gentleman.Dots"
+	repoDir := m.RepoDir
 	stepID := "aitools"
 
 	// Install and configure Claude Code
@@ -1530,7 +1531,7 @@ func stepCleanup(m *Model) error {
 	stepID := "cleanup"
 	SendLog(stepID, "Removing temporary files...")
 	// Only remove the cloned repo - no sudo needed
-	result := system.Run("rm -rf Gentleman.Dots", nil)
+	result := system.Run("rm -rf "+m.RepoDir, nil)
 	if result.Error != nil {
 		// Non-critical error, just log it
 		SendLog(stepID, "Warning: Could not remove temporary directory")
