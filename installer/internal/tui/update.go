@@ -1925,6 +1925,7 @@ var moduleCategories = []ModuleCategory{
 			{ID: "mcp-brave-search", Label: "Brave Search"},
 			{ID: "mcp-sentry", Label: "Sentry"},
 			{ID: "mcp-cloudflare", Label: "Cloudflare"},
+			{ID: "mcp-voicemode", Label: "VoiceMode"},
 		},
 	},
 }

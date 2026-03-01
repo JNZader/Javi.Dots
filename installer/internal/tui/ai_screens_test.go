@@ -145,7 +145,7 @@ func TestModuleCategoriesItemCounts(t *testing.T) {
 		"agents":   72,
 		"skills":   85,
 		"sdd":      2,
-		"mcp":      9,
+		"mcp":      10,
 	}
 	for _, cat := range moduleCategories {
 		exp, ok := expected[cat.ID]

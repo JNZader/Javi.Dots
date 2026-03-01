@@ -49,7 +49,7 @@ Una configuración completa de entorno de desarrollo que incluye:
 * **Neovim** con LSP, autocompletado y asistentes de IA (Claude Code, Gemini, OpenCode)
 * **Zed** editor con modo Vim y soporte para agentes IA
 * **Herramientas IA**: Claude Code, OpenCode, Gemini CLI, GitHub Copilot, Codex CLI, Qwen Code con configs, skills y temas
-* **Framework IA**: 198 módulos (72 agentes, 85 skills, 10 hooks, 20 comandos, 9 servidores MCP) + 6 orquestadores de dominio + 28 skills curados, con selección por preset o personalizada
+* **Framework IA**: 199 módulos (72 agentes, 85 skills, 10 hooks, 20 comandos, 10 servidores MCP) + 6 orquestadores de dominio + 28 skills curados, con selección por preset o personalizada
 * **Shells**: Fish, Zsh, Nushell
 * **Multiplexores de terminal**: Tmux, Zellij
 * **Emuladores de terminal**: Alacritty, WezTerm, Kitty, Ghostty
@@ -169,7 +169,7 @@ Elegí un orquestador de dominio → este rutea al especialista correcto. No má
 
 ### Framework IA (Paso 9)
 
-Elegí un preset o personalizá entre **198 módulos** en 6 categorías:
+Elegí un preset o personalizá entre **199 módulos** en 6 categorías:
 
 | Categoría | Módulos | Ejemplos |
 |-----------|--------:|---------|
@@ -178,7 +178,7 @@ Elegí un preset o personalizá entre **198 módulos** en 6 categorías:
 | 🤖 Agentes | 72 | React Pro, DevOps Engineer, Security Auditor |
 | 🎯 Skills | 85 | FastAPI, Spring Boot 4, Kubernetes, PyTorch |
 | 📐 SDD | 2 | OpenSpec, Agent Teams Lite |
-| 🔌 MCP | 9 | Context7, Engram, Jira, Atlassian, Figma, Notion, Brave Search, Sentry, Cloudflare |
+| 🔌 MCP | 10 | Context7, Engram, Jira, Atlassian, Figma, Notion, Brave Search, Sentry, Cloudflare, VoiceMode |
 
 **Presets**: Minimal, Frontend, Backend, Fullstack, Data, Complete
 
@@ -265,7 +265,7 @@ gentleman-dots --repo-url=https://github.com/TuUsuario/TuFork.git --repo-dir=TuF
 | ------------------------------------------------------------------ | ------------------------------------------------------------ |
 | [Guía del instalador TUI](docs/tui-installer.md)                   | Funciones interactivas, navegación, backup y restore        |
 | [Herramientas IA y Framework](docs/ai-tools-integration.md)        | Selección de IA, presets, drill-down por categoría, flags CLI |
-| [Módulos del Framework IA](docs/ai-framework-modules.md)           | Referencia completa de los 198 módulos en 6 categorías      |
+| [Módulos del Framework IA](docs/ai-framework-modules.md)           | Referencia completa de los 199 módulos en 6 categorías      |
 | [Agent Teams Lite](docs/agent-teams-lite.md)                       | Framework SDD liviano con 9 sub-agentes                     |
 | [Configuración de IA](docs/ai-configuration.md)                    | Claude Code, OpenCode, Copilot y más                        |
 | [Instalación manual](docs/manual-installation.md)                  | Configuración paso a paso para todas las plataformas        |

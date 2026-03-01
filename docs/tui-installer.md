@@ -76,7 +76,7 @@ From the main menu you can access:
 6. **Neovim**: Configure LazyVim with LSP and AI assistants
 7. **Zed**: Install Zed editor with Vim mode and AI agent support
 8. **AI Tools**: Multi-select Claude Code, OpenCode, Gemini CLI, GitHub Copilot, Codex CLI, Qwen Code (with Select All toggle)
-9. **AI Framework**: Choose preset or custom module selection (198 modules across 6 categories). OpenCode also receives 6 domain orchestrators for scalable agent routing
+9. **AI Framework**: Choose preset or custom module selection (199 modules across 6 categories). OpenCode also receives 6 domain orchestrators for scalable agent routing
 10. **Backup Confirmation**: Option to backup existing configs before overwriting
 11. **Installation**: Watch real-time progress
 

@@ -46,7 +46,7 @@ A complete development environment configuration including:
 - **Neovim** with LSP, autocompletion, and AI assistants (Claude Code, Gemini, OpenCode)
 - **Zed** editor with Vim mode and AI agent support
 - **AI Tools**: Claude Code, OpenCode, Gemini CLI, GitHub Copilot, Codex CLI, Qwen Code with configs, skills, and themes
-- **AI Framework**: 198 modules (72 agents, 85 skills, 10 hooks, 20 commands, 9 MCP servers) + 6 domain orchestrators + 28 curated skills, with preset or custom selection
+- **AI Framework**: 199 modules (72 agents, 85 skills, 10 hooks, 20 commands, 10 MCP servers) + 6 domain orchestrators + 28 curated skills, with preset or custom selection
 - **Shells**: Fish, Zsh, Nushell
 - **Terminal Multiplexers**: Tmux, Zellij
 - **Terminal Emulators**: Alacritty, WezTerm, Kitty, Ghostty
@@ -164,7 +164,7 @@ Pick a domain orchestrator → it routes to the right specialist. No more scroll
 
 ### AI Framework (Step 9)
 
-Choose a preset or customize from **198 modules** across 6 categories:
+Choose a preset or customize from **199 modules** across 6 categories:
 
 | Category | Modules | Examples |
 |----------|--------:|---------|
@@ -173,7 +173,7 @@ Choose a preset or customize from **198 modules** across 6 categories:
 | 🤖 Agents | 72 | React Pro, DevOps Engineer, Security Auditor |
 | 🎯 Skills | 85 | FastAPI, Spring Boot 4, Kubernetes, PyTorch |
 | 📐 SDD | 2 | OpenSpec, Agent Teams Lite |
-| 🔌 MCP | 9 | Context7, Engram, Jira, Atlassian, Figma, Notion, Brave Search, Sentry, Cloudflare |
+| 🔌 MCP | 10 | Context7, Engram, Jira, Atlassian, Figma, Notion, Brave Search, Sentry, Cloudflare, VoiceMode |
 
 **Presets**: Minimal, Frontend, Backend, Fullstack, Data, Complete
 
@@ -260,7 +260,7 @@ gentleman-dots --repo-url=https://github.com/YourUser/YourFork.git --repo-dir=Yo
 |----------|-------------|
 | [TUI Installer Guide](docs/tui-installer.md) | Interactive installer features, navigation, backup/restore |
 | [AI Tools & Framework](docs/ai-tools-integration.md) | AI tools selection, framework presets, category drill-down, CLI flags |
-| [AI Framework Modules](docs/ai-framework-modules.md) | Complete reference of all 198 modules across 6 categories + 28 curated skills |
+| [AI Framework Modules](docs/ai-framework-modules.md) | Complete reference of all 199 modules across 6 categories + 28 curated skills |
 | [Agent Teams Lite](docs/agent-teams-lite.md) | Lightweight SDD framework with 9 sub-agents |
 | [AI Configuration](docs/ai-configuration.md) | Claude Code, OpenCode, Copilot, and other AI assistants |
 | [Manual Installation](docs/manual-installation.md) | Step-by-step manual setup for all platforms |
