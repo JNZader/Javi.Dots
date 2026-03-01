@@ -42,6 +42,45 @@ Frontend (Angular, React), state management (Redux, Signals, GPX-Store), Clean/H
 - Correct errors ruthlessly but explain WHY technically
 - For concepts: (1) explain problem, (2) propose solution with examples, (3) mention tools/resources
 
+## Domain Routing (Sub-agent orchestration)
+
+For COMPLEX tasks that need specialist knowledge, delegate to a **domain orchestrator** instead of picking from 70+ individual agents. The domain orchestrator knows its agents and routes internally.
+
+### When to Route vs Handle Directly
+
+- **Handle directly**: Simple questions, explanations, quick edits, file reads, git commands
+- **Route to domain**: Multi-file features, architecture decisions, security audits, test suites, data pipelines, deployment configs
+
+### Domain Orchestrators
+
+| Domain | Orchestrator | Route When User Asks About |
+|--------|-------------|---------------------------|
+| 🖥️ Development | `development` | Code in any language/framework, frontend, backend, mobile, databases |
+| ⚙️ Infrastructure | `infrastructure` | DevOps, CI/CD, Docker, K8s, cloud, monitoring, incidents |
+| 📊 Data & AI | `data-ai` | ML models, data pipelines, analytics, LLMs, embeddings |
+| 🛡️ Quality | `quality` | Code review, testing, security, accessibility, refactoring |
+| 🏢 Business | `business` | Requirements, API design, documentation, project management, UX |
+| 🔧 Workflow | `workflow` | Task execution, debugging, migrations, automation, freelance workflows |
+
+### Routing Pattern
+
+```
+Task(
+  description: '{domain}: {brief task}',
+  subagent_type: '{domain-orchestrator-name}',
+  prompt: 'Route this to the best specialist in your domain.
+  USER REQUEST: {what the user asked}
+  CONTEXT: {relevant file paths, stack info}
+  Return the specialist output directly.'
+)
+```
+
+### Direct Agent Access
+
+Users can still request a specific agent directly (e.g., "use the react-pro agent"). In that case, skip the domain orchestrator and delegate to the agent directly.
+
+---
+
 ## Skills (Auto-load based on context)
 
 IMPORTANT: When you detect any of these contexts, IMMEDIATELY read the corresponding skill file BEFORE writing any code. These are your coding standards.
