@@ -63,6 +63,11 @@ IMPORTANT: When you detect any of these contexts, IMMEDIATELY read the correspon
 | PR review, GitHub issues, code review  | `~/.claude/skills/pr-review/SKILL.md`   |
 | Jira epics, large features             | `~/.claude/skills/jira-epic/SKILL.md`   |
 | Jira tasks, tickets, issues            | `~/.claude/skills/jira-task/SKILL.md`   |
+| LLM evaluation, testing AI outputs     | `~/.claude/skills/llm-evaluation/SKILL.md` |
+| Prompt engineering, CoT, few-shot      | `~/.claude/skills/prompt-engineering/SKILL.md` |
+| RAG systems, retrieval, reranking      | `~/.claude/skills/rag-advanced/SKILL.md` |
+| Embeddings, chunking, Voyage AI        | `~/.claude/skills/embedding-strategies/SKILL.md` |
+| Vector indexes, HNSW tuning, PQ        | `~/.claude/skills/vector-index-tuning/SKILL.md` |
 
 ### Plugin Detection (only if installed)
 

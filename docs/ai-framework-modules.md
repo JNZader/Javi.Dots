@@ -27,7 +27,7 @@ TUI Category Drill-Down        →    setup-global.sh
 ━━━━━━━━━━━━━━━━━━━━━━━        →    ━━━━━━━━━━━━━━━━
 🪝 Hooks (3/10 selected)       →    --features=hooks
 ⚡ Commands (0/20 selected)    →    (not included)
-🤖 Agents (1/80 selected)     →    --features=agents
+🤖 Agents (1/72 selected)     →    --features=agents
 🎯 Skills (5/85 selected)     →    --features=skills
 📐 SDD: OpenSpec ✓             →    --features=sdd
 🔌 MCP (2/9 selected)         →    --features=mcp
@@ -441,6 +441,45 @@ Development workflow patterns for Git, CI, automation, and AI-assisted developme
 | `workflow-git-worktrees` | Workflow: Git Worktrees | Git worktrees: parallel branch development, setup, and cleanup workflows |
 | `workflow-verification` | Workflow: Verification | Post-implementation verification checklist: tests, linting, types, and manual review |
 | `workflow-wave-workflow` | Workflow: Wave Workflow | Wave-based execution: dependency analysis, parallel waves, and progress tracking |
+
+---
+
+## 🎯 Curated Skills (28 items — auto-installed)
+
+In addition to the 85 framework skills above, the installer includes **28 curated skills** that are always installed alongside the skills feature. These are maintained in `GentlemanClaude/skills/` and `GentlemanOpenCode/skill/` and cover essential tools, SDD phases, and AI/ML patterns.
+
+> **Note:** Curated skills are NOT individually selectable in the TUI — they are installed as a bundle when the skills feature is enabled.
+
+| Skill | Description |
+|-------|-------------|
+| `ai-sdk-5` | Vercel AI SDK 5 patterns (breaking changes from v4) |
+| `django-drf` | Django REST Framework: ViewSets, Serializers, Filters |
+| `embedding-strategies` | Embedding model selection, Voyage AI, chunking, domain-specific embeddings |
+| `jira-epic` | Jira epic creation with parametrized project/field configuration |
+| `jira-task` | Jira task creation with parametrized project/field configuration |
+| `llm-evaluation` | LLM evaluation: automated metrics, LLM-as-Judge, A/B testing, regression detection |
+| `nextjs-15` | Next.js 15 App Router patterns, Server Actions, data fetching |
+| `playwright` | Playwright E2E testing patterns, Page Objects, selectors |
+| `pr-review` | GitHub PR review with structured analysis |
+| `prompt-engineering` | Advanced prompt patterns: CoT, few-shot, structured output, prompt caching |
+| `pytest` | Pytest testing patterns: fixtures, mocking, markers |
+| `rag-advanced` | Advanced RAG: HyDE, parent document retrieval, multi-query, reranking |
+| `react-19` | React 19 patterns with React Compiler (no useMemo/useCallback) |
+| `sdd-apply` | SDD implementation phase with semantic revert support |
+| `sdd-archive` | SDD archival and spec synchronization |
+| `sdd-design` | SDD technical design document creation |
+| `sdd-explore` | SDD exploration and investigation |
+| `sdd-init` | SDD project bootstrapping |
+| `sdd-propose` | SDD change proposal creation |
+| `sdd-spec` | SDD specification writing |
+| `sdd-tasks` | SDD task breakdown |
+| `sdd-verify` | SDD verification with semantic revert checking |
+| `skill-creator` | AI agent skill creation following the Agent Skills spec |
+| `tailwind-4` | Tailwind CSS 4 patterns and best practices |
+| `typescript` | TypeScript strict patterns and best practices |
+| `vector-index-tuning` | Vector index optimization: HNSW tuning, quantization, monitoring |
+| `zod-4` | Zod 4 schema validation (breaking changes from v3) |
+| `zustand-5` | Zustand 5 state management patterns |
 
 ---
 
