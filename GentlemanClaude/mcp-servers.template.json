@@ -4,6 +4,11 @@
       "type": "http",
       "url": "https://mcp.context7.com/mcp"
     },
+    "engram": {
+      "type": "stdio",
+      "command": "engram",
+      "args": ["mcp"]
+    },
     "mcp-atlassian": {
       "type": "stdio",
       "command": "uvx",
@@ -21,6 +26,10 @@
       "env": {
         "FIGMA_ACCESS_TOKEN": "YOUR_FIGMA_TOKEN_HERE"
       }
+    },
+    "notion": {
+      "type": "http",
+      "url": "https://mcp.notion.com/mcp"
     },
     "brave-search": {
       "type": "stdio",

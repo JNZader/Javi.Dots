@@ -58,12 +58,18 @@ IMPORTANT: When you detect any of these contexts, IMMEDIATELY read the correspon
 | Zustand stores, state management       | `~/.claude/skills/zustand-5/SKILL.md`  |
 | AI SDK, Vercel AI, streaming           | `~/.claude/skills/ai-sdk-5/SKILL.md`   |
 | Django, DRF, Python API                | `~/.claude/skills/django-drf/SKILL.md` |
-| Playwright tests, e2e                  | `~/.claude/skills/playwright/SKILL.md` |
-| Pytest, Python testing                 | `~/.claude/skills/pytest/SKILL.md`     |
+| Playwright tests, e2e                  | `~/.claude/skills/playwright/SKILL.md`  |
+| Pytest, Python testing                 | `~/.claude/skills/pytest/SKILL.md`      |
+| PR review, GitHub issues, code review  | `~/.claude/skills/pr-review/SKILL.md`   |
+| Jira epics, large features             | `~/.claude/skills/jira-epic/SKILL.md`   |
+| Jira tasks, tickets, issues            | `~/.claude/skills/jira-task/SKILL.md`   |
 
-### Plugin Detection
+### Plugin Detection (only if installed)
 
-| Context                                       | Read this file                                |
+> **Note:** These plugins are optional. Only load if the file exists at the path below.
+> Install via Skill Manager or manually to `~/.claude/plugins/`.
+
+| Context                                       | Read this file (if exists)                    |
 | --------------------------------------------- | --------------------------------------------- |
 | PR review, merge audit, code quality checks   | `~/.claude/plugins/merge-checks/PLUGIN.md`    |
 | Markdown cleanup, lint, token optimization     | `~/.claude/plugins/trim-md/PLUGIN.md`         |
