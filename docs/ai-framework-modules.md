@@ -1,6 +1,6 @@
 # AI Framework Module Registry
 
-Complete reference of all 198 modules across 6 categories available in the [project-starter-framework](https://github.com/JNZader/project-starter-framework). These modules are configured via the TUI installer's Custom mode or the `--ai-modules` CLI flag.
+Complete reference of all 199 modules across 6 categories available in the [project-starter-framework](https://github.com/JNZader/project-starter-framework). These modules are configured via the TUI installer's Custom mode or the `--ai-modules` CLI flag.
 
 ## Table of Contents
 
@@ -13,13 +13,13 @@ Complete reference of all 198 modules across 6 categories available in the [proj
 - [Agents (72 items)](#-agents-72-items)
 - [Skills (85 items)](#-skills-85-items)
 - [SDD — Spec-Driven Development (2 items)](#-sdd--spec-driven-development-2-items)
-- [MCP Servers (9 items)](#-mcp-servers-9-items)
+- [MCP Servers (10 items)](#-mcp-servers-10-items)
 
 ---
 
 ## Overview
 
-The installer presents 198 individual modules organized into 6 categories, plus **6 domain orchestrators** that provide intelligent agent routing for OpenCode. In the TUI, you can browse and toggle individual items within each category. However, `setup-global.sh` operates at the **feature level** — selecting ANY item within a category enables that entire feature.
+The installer presents 199 individual modules organized into 6 categories, plus **6 domain orchestrators** that provide intelligent agent routing for OpenCode. In the TUI, you can browse and toggle individual items within each category. However, `setup-global.sh` operates at the **feature level** — selecting ANY item within a category enables that entire feature.
 
 ## How Features Work
 
@@ -31,7 +31,7 @@ TUI Category Drill-Down        →    setup-global.sh
 🤖 Agents (1/72 selected)     →    --features=agents
 🎯 Skills (5/85 selected)     →    --features=skills
 📐 SDD: OpenSpec ✓             →    --features=sdd
-🔌 MCP (2/9 selected)         →    --features=mcp
+🔌 MCP (2/10 selected)         →    --features=mcp
 ```
 
 **Result:** `setup-global.sh --features=hooks,agents,skills,sdd,mcp`
@@ -51,9 +51,9 @@ The individual item selection in the TUI is **informational** — it helps you s
 | Agents | 🤖 | 72 | `agents` | No |
 | Skills | 🎯 | 85 | `skills` | No |
 | SDD | 📐 | 2 | `sdd` (OpenSpec only) | No |
-| MCP Servers | 🔌 | 9 | `mcp` | Yes |
+| MCP Servers | 🔌 | 10 | `mcp` | Yes |
 
-**Total: 198 modules**
+**Total: 199 modules**
 
 ---
 
@@ -470,9 +470,9 @@ Development workflow patterns for Git, CI, automation, and AI-assisted developme
 
 ---
 
-## 🎯 Curated Skills (28 items — auto-installed)
+## 🎯 Curated Skills (32 items — auto-installed)
 
-In addition to the 85 framework skills above, the installer includes **28 curated skills** that are always installed alongside the skills feature. These are maintained in `GentlemanClaude/skills/` and `GentlemanOpenCode/skill/` and cover essential tools, SDD phases, and AI/ML patterns.
+In addition to the 85 framework skills above, the installer includes **32 curated skills** that are always installed alongside the skills feature. These are maintained in `GentlemanClaude/skills/` and `GentlemanOpenCode/skill/` and cover essential tools, SDD phases, AI/ML patterns, and advanced workflow capabilities.
 
 > **Note:** Curated skills are NOT individually selectable in the TUI — they are installed as a bundle when the skills feature is enabled.
 
@@ -506,6 +506,10 @@ In addition to the 85 framework skills above, the installer includes **28 curate
 | `vector-index-tuning` | Vector index optimization: HNSW tuning, quantization, monitoring |
 | `zod-4` | Zod 4 schema validation (breaking changes from v3) |
 | `zustand-5` | Zustand 5 state management patterns |
+| `adversarial-review` | Multi-perspective adversarial code review (security + quality + test in parallel) |
+| `agent-testing` | Testing pyramid for AI agents: unit, scenario, and evaluation suites |
+| `codebase-cartography` | Auto-generate codebase maps for AI context (file trees, dependency graphs) |
+| `session-memory` | Session memory patterns, /remember commands, and toolset profiles |
 
 ---
 
@@ -544,7 +548,7 @@ Plugins are self-contained toolshed extensions that provide specialized capabili
 
 ---
 
-## 🔌 MCP Servers (9 items)
+## 🔌 MCP Servers (10 items)
 
 Model Context Protocol servers for enhanced AI capabilities. MCP is **atomic** — selecting any item enables the `mcp` feature, which installs ALL MCP server configurations. These servers extend your AI tool with external data sources and services.
 
@@ -559,3 +563,4 @@ Model Context Protocol servers for enhanced AI capabilities. MCP is **atomic** �
 | `mcp-brave-search` | Brave Search | Web search via Brave Search API (requires BRAVE_API_KEY) |
 | `mcp-sentry` | Sentry | Error monitoring and performance tracking via Sentry |
 | `mcp-cloudflare` | Cloudflare | Cloudflare Workers, Pages, and infrastructure management |
+| `mcp-voicemode` | VoiceMode | Voice conversations with AI via Whisper+Kokoro (local) or OpenAI (cloud). Requires `npx @anthropic-ai/voicemode` |

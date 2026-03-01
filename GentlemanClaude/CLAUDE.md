@@ -107,6 +107,10 @@ IMPORTANT: When you detect any of these contexts, IMMEDIATELY read the correspon
 | RAG systems, retrieval, reranking      | `~/.claude/skills/rag-advanced/SKILL.md` |
 | Embeddings, chunking, Voyage AI        | `~/.claude/skills/embedding-strategies/SKILL.md` |
 | Vector indexes, HNSW tuning, PQ        | `~/.claude/skills/vector-index-tuning/SKILL.md` |
+| Codebase mapping, repo overview, onboard | `~/.claude/skills/codebase-cartography/SKILL.md` |
+| AI agent testing, prompt validation      | `~/.claude/skills/agent-testing/SKILL.md` |
+| Session memory, /remember, toolsets      | `~/.claude/skills/session-memory/SKILL.md` |
+| Adversarial review, multi-perspective    | `~/.claude/skills/adversarial-review/SKILL.md` |
 
 ### Plugin Detection (only if installed)
 

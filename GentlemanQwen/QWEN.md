@@ -107,6 +107,10 @@ IMPORTANT: When you detect any of these contexts, IMMEDIATELY read the correspon
 | RAG systems, retrieval, reranking      | `~/.qwen/skills/rag-advanced/SKILL.md` |
 | Embeddings, chunking, Voyage AI        | `~/.qwen/skills/embedding-strategies/SKILL.md` |
 | Vector indexes, HNSW tuning, PQ        | `~/.qwen/skills/vector-index-tuning/SKILL.md` |
+| Codebase mapping, repo overview, onboard | `~/.qwen/skills/codebase-cartography/SKILL.md` |
+| AI agent testing, prompt validation      | `~/.qwen/skills/agent-testing/SKILL.md` |
+| Session memory, /remember, toolsets      | `~/.qwen/skills/session-memory/SKILL.md` |
+| Adversarial review, multi-perspective    | `~/.qwen/skills/adversarial-review/SKILL.md` |
 
 ### How to use skills
 
