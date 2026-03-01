@@ -111,6 +111,10 @@ IMPORTANT: When you detect any of these contexts, IMMEDIATELY read the correspon
 | AI agent testing, prompt validation      | `~/.claude/skills/agent-testing/SKILL.md` |
 | Session memory, /remember, toolsets      | `~/.claude/skills/session-memory/SKILL.md` |
 | Adversarial review, multi-perspective    | `~/.claude/skills/adversarial-review/SKILL.md` |
+| Playbooks, batch AI task execution       | `~/.claude/skills/playbooks/SKILL.md` |
+| Multi-round synthesis, delegation rounds | `~/.claude/skills/multi-round-synthesis/SKILL.md` |
+| Git worktree-flow, parallel branches     | `~/.claude/skills/worktree-flow/SKILL.md` |
+| Cost tracking, token usage monitoring    | `~/.claude/skills/cost-tracking/SKILL.md` |
 
 ### Plugin Detection (only if installed)
 

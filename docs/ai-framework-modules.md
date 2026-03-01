@@ -470,9 +470,9 @@ Development workflow patterns for Git, CI, automation, and AI-assisted developme
 
 ---
 
-## 🎯 Curated Skills (32 items — auto-installed)
+## 🎯 Curated Skills (36 items — auto-installed)
 
-In addition to the 85 framework skills above, the installer includes **32 curated skills** that are always installed alongside the skills feature. These are maintained in `GentlemanClaude/skills/` and `GentlemanOpenCode/skill/` and cover essential tools, SDD phases, AI/ML patterns, and advanced workflow capabilities.
+In addition to the 85 framework skills above, the installer includes **36 curated skills** that are always installed alongside the skills feature. These are maintained in `GentlemanClaude/skills/` and `GentlemanOpenCode/skill/` and cover essential tools, SDD phases, AI/ML patterns, and advanced workflow capabilities.
 
 > **Note:** Curated skills are NOT individually selectable in the TUI — they are installed as a bundle when the skills feature is enabled.
 
@@ -510,6 +510,10 @@ In addition to the 85 framework skills above, the installer includes **32 curate
 | `agent-testing` | Testing pyramid for AI agents: unit, scenario, and evaluation suites |
 | `codebase-cartography` | Auto-generate codebase maps for AI context (file trees, dependency graphs) |
 | `session-memory` | Session memory patterns, /remember commands, and toolset profiles |
+| `playbooks` | Executable markdown playbooks for batch AI task processing |
+| `multi-round-synthesis` | Multi-round agent orchestration with delegation and synthesis |
+| `worktree-flow` | Automated git worktree per task with auto-PR workflow |
+| `cost-tracking` | Token usage monitoring, cost estimation, and budget alerts |
 
 ---
 

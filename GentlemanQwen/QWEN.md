@@ -111,6 +111,10 @@ IMPORTANT: When you detect any of these contexts, IMMEDIATELY read the correspon
 | AI agent testing, prompt validation      | `~/.qwen/skills/agent-testing/SKILL.md` |
 | Session memory, /remember, toolsets      | `~/.qwen/skills/session-memory/SKILL.md` |
 | Adversarial review, multi-perspective    | `~/.qwen/skills/adversarial-review/SKILL.md` |
+| Playbooks, batch AI task execution       | `~/.qwen/skills/playbooks/SKILL.md` |
+| Multi-round synthesis, delegation rounds | `~/.qwen/skills/multi-round-synthesis/SKILL.md` |
+| Git worktree-flow, parallel branches     | `~/.qwen/skills/worktree-flow/SKILL.md` |
+| Cost tracking, token usage monitoring    | `~/.qwen/skills/cost-tracking/SKILL.md` |
 
 ### How to use skills
 
