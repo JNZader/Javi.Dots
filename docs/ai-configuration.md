@@ -76,6 +76,7 @@ These are automatically installed by the TUI installer (Step 8: AI Tools Selecti
 | Gemini CLI | `npm install -g @google/gemini-cli` | ✅ Binary only |
 | Codex CLI | `npm install -g @openai/codex` | ✅ Binary + AGENTS.md config |
 | GitHub Copilot CLI | `gh extension install github/gh-copilot` | ✅ Extension install |
+| Qwen Code | `npm install -g @qwen-code/qwen-code` | ✅ Binary + QWEN.md + settings.json |
 
 The installer also optionally configures the **AI Framework** (Step 9) with 198 modules across 6 categories: hooks, commands, agents, skills, SDD, and MCP servers.
 
@@ -320,6 +321,44 @@ The Gentleman OpenCode config includes MCP (Model Context Protocol) integration:
 | **Cloudflare** | Cloudflare Workers, Pages, and infrastructure management (OAuth) |
 
 This is enabled by default and enhances the agent's ability to verify information with current docs and external services.
+
+---
+
+## Qwen Code Configuration
+
+Qwen Code is an open-source AI agent by Alibaba, optimized for Qwen3-Coder models. It supports multi-provider APIs (OpenAI, Anthropic, Gemini) and offers 1,000 free requests/day via Qwen OAuth.
+
+### What's Included
+
+| File | Destination | Purpose |
+|------|-------------|---------|
+| `QWEN.md` | `~/.qwen/QWEN.md` | Global instructions with Gentleman personality |
+| `settings.json` | `~/.qwen/settings.json` | Model config (Qwen3-Coder-Plus), vim mode, tool permissions |
+
+### Config Directory
+
+```
+~/.qwen/
+├── QWEN.md           # Context file (equivalent to CLAUDE.md)
+├── settings.json     # Model, tools, UI config
+└── skills/           # Skill directories (SKILL.md per skill)
+```
+
+### Authentication
+
+Start Qwen Code and run `/auth`:
+- **Qwen OAuth** (free): 1,000 requests/day with Qwen3-Coder
+- **API-KEY**: Connect to any OpenAI/Anthropic/Gemini-compatible provider
+
+### Key Settings
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `model.name` | `qwen3-coder-plus` | Default model |
+| `general.vimMode` | `true` | Vim keybindings |
+| `general.gitCoAuthor` | `false` | No AI attribution |
+| `tools.approvalMode` | `default` | Require approval for file edits |
+| `context.fileName` | `QWEN.md` | Context file name |
 
 ---
 

@@ -75,7 +75,7 @@ From the main menu you can access:
 5. **Window Manager**: Select Tmux, Zellij, or None
 6. **Neovim**: Configure LazyVim with LSP and AI assistants
 7. **Zed**: Install Zed editor with Vim mode and AI agent support
-8. **AI Tools**: Multi-select Claude Code, OpenCode, Gemini CLI, GitHub Copilot, Codex CLI
+8. **AI Tools**: Multi-select Claude Code, OpenCode, Gemini CLI, GitHub Copilot, Codex CLI, Qwen Code
 9. **AI Framework**: Choose preset or custom module selection (198 modules across 6 categories)
 10. **Backup Confirmation**: Option to backup existing configs before overwriting
 11. **Installation**: Watch real-time progress
@@ -141,7 +141,7 @@ gentleman.dots --non-interactive --shell=<shell> [options]
 
 | Flag | Values | Description |
 |------|--------|-------------|
-| `--ai-tools` | `claude,opencode,gemini,copilot,codex` | AI tools (comma-separated) |
+| `--ai-tools` | `claude,opencode,gemini,copilot,codex,qwen` | AI tools (comma-separated) |
 | `--ai-framework` | | Install AI coding framework |
 | `--ai-preset` | `minimal,frontend,backend,fullstack,data,complete` | Framework preset |
 | `--ai-modules` | `hooks,commands,skills,agents,sdd,mcp` | Framework features (comma-separated) |

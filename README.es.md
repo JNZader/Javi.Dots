@@ -48,7 +48,7 @@ Una configuración completa de entorno de desarrollo que incluye:
 
 * **Neovim** con LSP, autocompletado y asistentes de IA (Claude Code, Gemini, OpenCode)
 * **Zed** editor con modo Vim y soporte para agentes IA
-* **Herramientas IA**: Claude Code, OpenCode, Gemini CLI, GitHub Copilot, Codex CLI con configs, skills y temas
+* **Herramientas IA**: Claude Code, OpenCode, Gemini CLI, GitHub Copilot, Codex CLI, Qwen Code con configs, skills y temas
 * **Framework IA**: 198 módulos (72 agentes, 85 skills, 10 hooks, 20 comandos, 9 servidores MCP) con selección por preset o personalizada
 * **Shells**: Fish, Zsh, Nushell
 * **Multiplexores de terminal**: Tmux, Zellij

@@ -27,7 +27,7 @@ The AI integration adds two installation steps to the wizard:
 
 | Step | Screen | Description |
 |------|--------|-------------|
-| **Step 8** | AI Tools Selection | Multi-select: Claude Code, OpenCode, Gemini CLI, GitHub Copilot, Codex CLI |
+| **Step 8** | AI Tools Selection | Multi-select: Claude Code, OpenCode, Gemini CLI, GitHub Copilot, Codex CLI, Qwen Code |
 | **Step 9** | AI Framework | Preset or custom module selection from the [project-starter-framework](https://github.com/JNZader/project-starter-framework) |
 
 These steps appear after Zed editor (Step 7) and before the backup confirmation screen.
@@ -49,11 +49,13 @@ Multi-select checkboxes for 5 AI coding tools:
 | Gemini CLI | `gemini` | `npm install -g @google/gemini-cli` |
 | GitHub Copilot | `copilot` | `gh extension install github/gh-copilot` |
 | Codex CLI | `codex` | `npm install -g @openai/codex` + AGENTS.md config |
+| Qwen Code | `qwen` | `npm install -g @qwen-code/qwen-code` + QWEN.md + settings.json |
 
 **Behavior:**
 - Toggle individual tools with `Enter` or `Space`
 - `[✓]` / `[ ]` checkboxes show selection state
-- "Confirm selection" collects all toggled tools
+- "🔘 Select All" toggles all tools on/off
+- "✅ Confirm selection" collects all toggled tools
 - If **no tools** are selected, the framework step is skipped entirely
 - This step is **skipped on Termux** (AI tools not supported on Android)
 
@@ -76,6 +78,12 @@ Multi-select checkboxes for 5 AI coding tools:
 **What gets installed for Codex CLI:**
 - Binary via npm (`@openai/codex`)
 - `AGENTS.md` copied to `~/.codex/` (Codex reads AGENTS.md for instructions)
+
+**What gets installed for Qwen Code:**
+- Binary via npm (`@qwen-code/qwen-code`)
+- `QWEN.md` global instructions with Gentleman personality (to `~/.qwen/`)
+- `settings.json` with Qwen3-Coder-Plus model, vim mode, tool permissions
+- Skills directory at `~/.qwen/skills/`
 
 ### Step 9a: Framework Confirmation
 
@@ -213,7 +221,7 @@ gentleman.dots --non-interactive --shell=<shell> [AI options]
 
 | Flag | Values | Description |
 |------|--------|-------------|
-| `--ai-tools=<tools>` | `claude,opencode,gemini,copilot,codex` | AI tools (comma-separated) |
+| `--ai-tools=<tools>` | `claude,opencode,gemini,copilot,codex,qwen` | AI tools (comma-separated) |
 | `--ai-framework` | | Install AI coding framework |
 | `--ai-preset=<name>` | `minimal,frontend,backend,fullstack,data,complete` | Framework preset |
 | `--ai-modules=<feats>` | `hooks,commands,skills,agents,sdd,mcp` | Feature flags (comma-separated) |
@@ -224,7 +232,7 @@ gentleman.dots --non-interactive --shell=<shell> [AI options]
 ```bash
 # Full setup with preset
 gentleman.dots --non-interactive --shell=fish --nvim \
-  --ai-tools=claude,opencode,gemini,copilot,codex --ai-preset=fullstack
+  --ai-tools=claude,opencode,gemini,copilot,codex,qwen --ai-preset=fullstack
 
 # Custom feature selection with Agent Teams Lite
 gentleman.dots --non-interactive --shell=zsh --ai-tools=claude --ai-framework \
@@ -241,7 +249,7 @@ gentleman.dots --dry-run --non-interactive --shell=zsh \
 
 ### Validation
 
-- AI tools validated against: `{claude, opencode, gemini, copilot, codex}`
+- AI tools validated against: `{claude, opencode, gemini, copilot, codex, qwen}`
 - Presets validated against: `{minimal, frontend, backend, fullstack, data, complete}`
 - Feature flags validated against: `{hooks, commands, skills, agents, sdd, mcp}`
 - Framework is auto-enabled if `--ai-preset`, `--ai-modules`, or `--agent-teams-lite` is provided

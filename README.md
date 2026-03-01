@@ -45,7 +45,7 @@ A complete development environment configuration including:
 
 - **Neovim** with LSP, autocompletion, and AI assistants (Claude Code, Gemini, OpenCode)
 - **Zed** editor with Vim mode and AI agent support
-- **AI Tools**: Claude Code, OpenCode, Gemini CLI, GitHub Copilot, Codex CLI with configs, skills, and themes
+- **AI Tools**: Claude Code, OpenCode, Gemini CLI, GitHub Copilot, Codex CLI, Qwen Code with configs, skills, and themes
 - **AI Framework**: 198 modules (72 agents, 85 skills, 10 hooks, 20 commands, 9 MCP servers) + 28 curated skills, with preset or custom selection
 - **Shells**: Fish, Zsh, Nushell
 - **Terminal Multiplexers**: Tmux, Zellij
