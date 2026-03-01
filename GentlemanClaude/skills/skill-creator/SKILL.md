@@ -84,8 +84,8 @@ metadata:
 | Type | Pattern | Examples |
 |------|---------|----------|
 | Generic skill | `{technology}` | `pytest`, `playwright`, `typescript` |
-| Prowler-specific | `prowler-{component}` | `prowler-api`, `prowler-ui`, `prowler-sdk-check` |
-| Testing skill | `prowler-test-{component}` | `prowler-test-sdk`, `prowler-test-api` |
+| Project-specific | `{project}-{component}` | `myapp-api`, `myapp-ui`, `myapp-sdk` |
+| Testing skill | `{project}-test-{component}` | `myapp-test-sdk`, `myapp-test-api` |
 | Workflow skill | `{action}-{target}` | `skill-creator`, `jira-task` |
 
 ---
@@ -104,12 +104,12 @@ Link to external guides?    → references/ (with local path)
 
 ---
 
-## Decision: Prowler-Specific vs Generic
+## Decision: Project-Specific vs Generic
 
 ```
-Patterns apply to ANY project?     → Generic skill (e.g., pytest, typescript)
-Patterns are Prowler-specific?     → prowler-{name} skill
-Generic skill needs Prowler info?  → Add references/ pointing to Prowler docs
+Patterns apply to ANY project?      → Generic skill (e.g., pytest, typescript)
+Patterns are project-specific?      → {project}-{name} skill
+Generic skill needs project info?   → Add references/ pointing to project docs
 ```
 
 ---
