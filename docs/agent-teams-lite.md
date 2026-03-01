@@ -57,6 +57,16 @@ Each sub-agent is a SKILL.md file installed in your tool's skills directory:
 | 8 | `sdd-verify` | Validate completeness with actual test execution |
 | 9 | `sdd-archive` | Merge delta specs into main specs, archive completed change |
 
+### Shared Conventions (v3.0)
+
+All 9 skills reference shared convention files in `skills/_shared/` instead of inlining persistence logic (~224 lines of duplication removed):
+
+| File | Purpose |
+|------|---------|
+| `persistence-contract.md` | Mode resolution rules (`engram \| openspec \| none`) |
+| `engram-convention.md` | Deterministic artifact naming (`sdd/{change}/{type}`) and two-step recovery protocol |
+| `openspec-convention.md` | File paths, directory structure, config reference |
+
 ### Dependency Graph
 
 ```
@@ -125,7 +135,9 @@ The installer maps its internal tool IDs to Agent Teams Lite agent names:
 | `claude` | `claude-code` |
 | `opencode` | `opencode` |
 | `gemini` | `gemini-cli` |
-| `copilot` | _(not supported)_ |
+| `qwen` | `qwen-code` (via Qwen Code skill paths) |
+| `codex` | `codex` |
+| `copilot` | `vscode` (VS Code Copilot agent mode) |
 
 ## SDD Workflow
 
@@ -176,4 +188,6 @@ cd agent-teams-lite
 After installation, add the orchestrator block to your tool's configuration file:
 - **Claude Code:** Copy from `examples/claude-code/CLAUDE.md` into `~/.claude/CLAUDE.md`
 - **Gemini CLI:** Copy from `examples/gemini-cli/GEMINI.md` into `~/.gemini/GEMINI.md`
-- **OpenCode:** Merge from `examples/opencode/opencode.json` into `~/.config/opencode/opencode.json`
+- **OpenCode:** Merge from `examples/opencode/opencode.json` into `~/.config/opencode/opencode.json` (commands are auto-installed to `~/.config/opencode/commands/`)
+- **Codex:** Copy from `examples/codex/agents.md` into `~/.codex/agents.md`
+- **VS Code:** Copy from `examples/vscode/copilot-instructions.md` into your User prompts folder
