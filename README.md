@@ -347,15 +347,6 @@ Javi.Dots/
 
 ---
 
-## Support
-
-- **Issues**: [GitHub Issues](https://github.com/JNZader/Javi.Dots/issues)
-- **Upstream**: [Gentleman.Dots](https://github.com/Gentleman-Programming/Gentleman.Dots) by Gentleman Programming
-- **Discord**: [Gentleman Programming Community](https://discord.gg/gentleman-programming)
-- **YouTube**: [@GentlemanProgramming](https://youtube.com/@GentlemanProgramming)
-
----
-
 ## License
 
 MIT License - feel free to use, modify, and share.
