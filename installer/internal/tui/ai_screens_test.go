@@ -143,7 +143,7 @@ func TestModuleCategoriesItemCounts(t *testing.T) {
 		"hooks":    10,
 		"commands": 20,
 		"agents":   72,
-		"skills":   85,
+		"skills":   84,
 		"sdd":      2,
 		"mcp":      10,
 	}

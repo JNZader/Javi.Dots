@@ -77,6 +77,7 @@ const (
 	ScreenProjectMemory          // Single-select: memory module
 	ScreenProjectObsidianInstall // Offer to install Obsidian app if not detected
 	ScreenProjectEngram          // Yes/No: add Engram alongside Obsidian Brain
+	ScreenProjectRolePack        // Multi-select: role packs for Obsidian Brain
 	ScreenProjectCI              // Single-select: CI provider
 	ScreenProjectConfirm         // Summary before execution
 	ScreenProjectInstalling      // Progress log
@@ -135,13 +136,14 @@ type UserChoices struct {
 	AIFrameworkModules    []string // Individual module names when preset is "custom"
 	InstallAgentTeamsLite bool     // Whether to install agent-teams-lite SDD framework
 	// Project init
-	InitProject     bool
-	ProjectPath     string
-	ProjectStack    string
-	ProjectMemory   string
-	ProjectCI       string
-	ProjectEngram   bool
-	InstallObsidian bool
+	InitProject      bool
+	ProjectPath      string
+	ProjectStack     string
+	ProjectMemory    string
+	ProjectCI        string
+	ProjectEngram    bool
+	ProjectRolePacks []string
+	InstallObsidian  bool
 }
 
 // Model is the main application state
@@ -214,6 +216,8 @@ type Model struct {
 	ProjectMemory    string
 	ProjectEngram    bool
 	ProjectCI        string
+	ProjectRolePacks []string
+	RolePackSelected []bool
 	ProjectLogLines  []string
 	// Project path enhanced input
 	ProjectPathCursor      int      // cursor position within rune slice
@@ -287,6 +291,8 @@ func NewModel() Model {
 		ProjectMemory:          "",
 		ProjectEngram:          false,
 		ProjectCI:              "",
+		ProjectRolePacks:       nil,
+		RolePackSelected:       nil,
 		ProjectLogLines:        []string{},
 		ProjectPathCursor:      0,
 		ProjectPathMode:        PathModeTyping,
@@ -538,6 +544,17 @@ func (m Model) GetCurrentOptions() []string {
 		return []string{"Yes, install Obsidian", "No, continue without it"}
 	case ScreenProjectEngram:
 		return []string{"Yes, add Engram too", "No, just Obsidian Brain"}
+	case ScreenProjectRolePack:
+		coreLabel := "[x] Core (always included)"
+		devLabel := "[ ] Developer Pack"
+		pmLabel := "[ ] PM/Tech Lead Pack"
+		if m.RolePackSelected != nil && len(m.RolePackSelected) > 0 && m.RolePackSelected[0] {
+			devLabel = "[x] Developer Pack"
+		}
+		if m.RolePackSelected != nil && len(m.RolePackSelected) > 1 && m.RolePackSelected[1] {
+			pmLabel = "[x] PM/Tech Lead Pack"
+		}
+		return []string{coreLabel, devLabel, pmLabel, "─────────────", "✅ Confirm selection"}
 	case ScreenProjectCI:
 		return []string{"GitHub Actions", "GitLab CI", "Woodpecker", "None"}
 	case ScreenProjectConfirm:
@@ -675,6 +692,8 @@ func (m Model) GetScreenTitle() string {
 		return "📦 Initialize Project — Obsidian App"
 	case ScreenProjectEngram:
 		return "📦 Initialize Project — Engram Add-on"
+	case ScreenProjectRolePack:
+		return "📦 Initialize Project — Role Packs"
 	case ScreenProjectCI:
 		return "📦 Initialize Project — CI/CD Provider"
 	case ScreenProjectConfirm:
@@ -753,6 +772,8 @@ func (m Model) GetScreenDescription() string {
 		return "Obsidian app not detected. Install it for Obsidian Brain?"
 	case ScreenProjectEngram:
 		return "Add Engram persistent memory alongside Obsidian Brain?"
+	case ScreenProjectRolePack:
+		return "Select role packs for your Obsidian Brain vault"
 	case ScreenProjectCI:
 		return "Select CI/CD provider for your project"
 	case ScreenProjectConfirm:

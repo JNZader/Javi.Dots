@@ -1,6 +1,6 @@
 # AI Framework Module Registry
 
-Complete reference of all 199 modules across 6 categories available in the [project-starter-framework](https://github.com/JNZader/project-starter-framework). These modules are configured via the TUI installer's Custom mode or the `--ai-modules` CLI flag.
+Complete reference of all 208 modules across 6 categories available in the [project-starter-framework](https://github.com/JNZader/project-starter-framework). These modules are configured via the TUI installer's Custom mode or the `--ai-modules` CLI flag.
 
 ## Table of Contents
 
@@ -10,8 +10,8 @@ Complete reference of all 199 modules across 6 categories available in the [proj
 - [Domain Orchestrators (6 items)](#-domain-orchestrators-6-items)
 - [Hooks (10 items)](#-hooks-10-items)
 - [Commands (20 items)](#-commands-20-items)
-- [Agents (72 items)](#-agents-72-items)
-- [Skills (85 items)](#-skills-85-items)
+- [Agents (80 items)](#-agents-80-items)
+- [Skills (87 items)](#-skills-87-items)
 - [SDD — Spec-Driven Development (2 items)](#-sdd--spec-driven-development-2-items)
 - [MCP Servers (10 items)](#-mcp-servers-10-items)
 
@@ -19,7 +19,7 @@ Complete reference of all 199 modules across 6 categories available in the [proj
 
 ## Overview
 
-The installer presents 199 individual modules organized into 6 categories, plus **6 domain orchestrators** that provide intelligent agent routing for OpenCode. In the TUI, you can browse and toggle individual items within each category. However, `setup-global.sh` operates at the **feature level** — selecting ANY item within a category enables that entire feature.
+The installer presents 209 individual modules organized into 6 categories, plus **6 domain orchestrators** that provide intelligent agent routing for OpenCode. In the TUI, you can browse and toggle individual items within each category. However, `setup-global.sh` operates at the **feature level** — selecting ANY item within a category enables that entire feature.
 
 ## How Features Work
 
@@ -28,8 +28,8 @@ TUI Category Drill-Down        →    setup-global.sh
 ━━━━━━━━━━━━━━━━━━━━━━━        →    ━━━━━━━━━━━━━━━━
 🪝 Hooks (3/10 selected)       →    --features=hooks
 ⚡ Commands (0/20 selected)    →    (not included)
-🤖 Agents (1/72 selected)     →    --features=agents
-🎯 Skills (5/85 selected)     →    --features=skills
+🤖 Agents (1/80 selected)     →    --features=agents
+🎯 Skills (5/87 selected)     →    --features=skills
 📐 SDD: OpenSpec ✓             →    --features=sdd
 🔌 MCP (2/10 selected)         →    --features=mcp
 ```
@@ -48,18 +48,18 @@ The individual item selection in the TUI is **informational** — it helps you s
 |----------|------|------:|:-------------|:------:|
 | Hooks | 🪝 | 10 | `hooks` | No |
 | Commands | ⚡ | 20 | `commands` | No |
-| Agents | 🤖 | 72 | `agents` | No |
-| Skills | 🎯 | 85 | `skills` | No |
+| Agents | 🤖 | 80 | `agents` | No |
+| Skills | 🎯 | 87 | `skills` | No |
 | SDD | 📐 | 2 | `sdd` (OpenSpec only) | No |
 | MCP Servers | 🔌 | 10 | `mcp` | Yes |
 
-**Total: 199 modules**
+**Total: 208 modules**
 
 ---
 
 ## 🧭 Domain Orchestrators (6 items)
 
-Domain orchestrators sit between the user and the 72 individual agents, providing intelligent routing by domain. Instead of scrolling through a flat list of 72+ agents in OpenCode's Tab picker, you select from 6 domain orchestrators (plus Gentleman, SDD, and general orchestrator = 9 total agents visible).
+Domain orchestrators sit between the user and the 80 individual agents, providing intelligent routing by domain. Instead of scrolling through a flat list of 80+ agents in OpenCode's Tab picker, you select from 6 domain orchestrators (plus Gentleman, SDD, and general orchestrator = 9 total agents visible).
 
 Each orchestrator knows every agent in its domain and delegates to the right specialist based on your task description. They work across **all 4 CLIs** that support sub-agents: Claude Code, OpenCode, Qwen Code, and Gemini CLI.
 
@@ -295,7 +295,7 @@ Niche agents for specific domains like blockchain, game dev, mobile, healthcare,
 
 ---
 
-## 🎯 Skills (85 items)
+## 🎯 Skills (87 items)
 
 Framework standards, coding patterns, and technology-specific best practices. Skills are reference documents that AI agents consult when working with specific technologies. They define patterns, anti-patterns, and conventions to follow.
 
@@ -407,14 +407,13 @@ Mobile and hybrid app development patterns with Ionic and Capacitor.
 | `mobile-ionic-capacitor` | Mobile: Ionic Capacitor | Capacitor native plugins: camera, filesystem, push notifications, and deep links |
 | `mobile-mobile-ionic` | Mobile: Mobile Ionic | Ionic framework: components, navigation, theming, and platform-specific styling |
 
-### Prompt & Quality Skills (2)
+### Prompt Skills (1)
 
-Prompt engineering and code quality review patterns.
+Prompt engineering patterns.
 
 | ID | Label | Description |
 |----|-------|-------------|
 | `prompt-improver` | Prompt: Prompt Improver | Prompt improvement techniques: structure, context, constraints, and few-shot examples |
-| `quality-ghagga-review` | Quality: Ghagga Review | Code review following Ghagga methodology: incremental, checklist-based quality gates |
 
 ### References Skills (5)
 
@@ -449,9 +448,9 @@ Testing frameworks and strategies for frontend and backend applications.
 | `testing-testcontainers` | Testing: Testcontainers | Testcontainers: Docker-based integration tests for databases, queues, and services |
 | `testing-vitest-testing` | Testing: Vitest Testing | Vitest: fast unit tests, mocking, snapshot testing, and coverage with v8 |
 
-### Workflow Skills (12)
+### Workflow Skills (15)
 
-Development workflow patterns for Git, CI, automation, and AI-assisted development.
+Development workflow patterns for Git, CI, automation, AI-assisted development, and Obsidian Brain knowledge management.
 
 | ID | Label | Description |
 |----|-------|-------------|
@@ -463,10 +462,25 @@ Development workflow patterns for Git, CI, automation, and AI-assisted developme
 | `workflow-git-workflow` | Workflow: Git Workflow | Git workflow patterns: trunk-based, GitFlow, GitHub Flow, and release management |
 | `workflow-ide-plugins` | Workflow: IDE Plugins | IDE plugin recommendations and configuration for VS Code and Neovim |
 | `workflow-ide-plugins-intellij` | Workflow: IDE Plugins IntelliJ | IntelliJ IDEA plugins and configuration for optimal Java/Kotlin development |
-| `workflow-obsidian-brain` | Workflow: Obsidian Brain | Obsidian knowledge management: daily notes, MOCs, templates, and AI integration |
+| `workflow-obsidian-brain` | Workflow: Obsidian Brain | Obsidian knowledge management: daily notes, MOCs, templates, role packs, and AI integration |
+| `workflow-obsidian-braindump` | Workflow: Obsidian Braindump | Quick capture of thoughts and decisions into Obsidian Brain vault |
+| `workflow-obsidian-consolidation` | Workflow: Obsidian Consolidation | Periodic synthesis of notes into frameworks and insights |
+| `workflow-obsidian-resource-capture` | Workflow: Obsidian Resource Capture | URL/resource capture with auto-extracted insights |
 | `workflow-git-worktrees` | Workflow: Git Worktrees | Git worktrees: parallel branch development, setup, and cleanup workflows |
 | `workflow-verification` | Workflow: Verification | Post-implementation verification checklist: tests, linting, types, and manual review |
 | `workflow-wave-workflow` | Workflow: Wave Workflow | Wave-based execution: dependency analysis, parallel waves, and progress tracking |
+
+### Obsidian Brain Role Packs
+
+The Obsidian Brain knowledge management system supports **additive role packs** that customize the vault structure and templates for different workflows. Role packs are selected during project initialization via the TUI or `--project-role-pack` CLI flag.
+
+| Pack | ID | Templates | Description |
+|------|-----|-----------|-------------|
+| **Core** | `core` | braindump, resource-capture, consolidation, daily-note | Always included. Basic knowledge capture and synthesis workflow |
+| **Developer** | `developer` | adr, coding-session, tech-debt, debug-journal, sdd-feedback | Architecture decisions, coding sessions, debugging, and SDD feedback |
+| **PM/Tech Lead** | `pm-lead` | meeting-notes, sprint-review, stakeholder-update, risk-registry, daily-brief, weekly-brief, team-intelligence | Meetings, sprints, stakeholder communication, and team intelligence |
+
+Core is always installed. Developer and PM/Tech Lead are optional and additive — selecting both gives you the full template set.
 
 ---
 

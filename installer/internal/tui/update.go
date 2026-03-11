@@ -295,8 +295,9 @@ func (m Model) runProjectInit() tea.Cmd {
 	memory := m.ProjectMemory
 	ci := m.ProjectCI
 	engram := m.ProjectEngram
+	rolePacks := m.ProjectRolePacks
 	return func() tea.Msg {
-		err := runProjectInitScript(path, memory, ci, engram)
+		err := runProjectInitScript(path, memory, ci, engram, rolePacks)
 		return projectInstallCompleteMsg{err: err}
 	}
 }
@@ -858,8 +859,8 @@ func (m Model) handleKeyPress(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		case ScreenTrainerLesson, ScreenTrainerPractice, ScreenTrainerBoss:
 			// Trainer input screens: space is part of the input, pass through
 			// (handled below in screen-specific handlers)
-		case ScreenSkillInstall, ScreenSkillRemove:
-			// Skill multi-select screens: space toggles selection, pass through
+		case ScreenSkillInstall, ScreenSkillRemove, ScreenProjectRolePack:
+			// Multi-select screens: space toggles selection, pass through
 		default:
 			// All other screens: activate leader mode
 			m.LeaderMode = true
@@ -890,6 +891,9 @@ func (m Model) handleKeyPress(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 
 	case ScreenAIToolsSelect:
 		return m.handleAIToolsKeys(key)
+
+	case ScreenProjectRolePack:
+		return m.handleRolePackKeys(key)
 
 	case ScreenAIFrameworkCategories:
 		return m.handleAICategoriesKeys(key)
@@ -1009,7 +1013,7 @@ func (m Model) handleKeyPress(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 func (m Model) handleEscape() (tea.Model, tea.Cmd) {
 	switch m.Screen {
 	// Installation wizard screens - go back through the flow
-	case ScreenOSSelect, ScreenTerminalSelect, ScreenFontSelect, ScreenShellSelect, ScreenWMSelect, ScreenNvimSelect, ScreenZedSelect, ScreenAIToolsSelect, ScreenAIFrameworkConfirm, ScreenAIFrameworkPreset, ScreenAIFrameworkCategories, ScreenAIFrameworkCategoryItems:
+	case ScreenOSSelect, ScreenTerminalSelect, ScreenFontSelect, ScreenShellSelect, ScreenWMSelect, ScreenNvimSelect, ScreenZedSelect, ScreenAIToolsSelect, ScreenAIFrameworkConfirm, ScreenAIFrameworkPreset, ScreenAIFrameworkCategories, ScreenAIFrameworkCategoryItems, ScreenProjectRolePack:
 		return m.goBackInstallStep()
 	case ScreenGhosttyWarning:
 		// Go back to terminal selection
@@ -1316,9 +1320,14 @@ func (m Model) goBackInstallStep() (tea.Model, tea.Cmd) {
 			m.Screen = ScreenProjectMemory
 		}
 		m.Cursor = 0
+	case ScreenProjectRolePack:
+		m.Screen = ScreenProjectEngram
+		m.Cursor = 0
+		m.RolePackSelected = nil
+		m.ProjectRolePacks = nil
 	case ScreenProjectCI:
 		if m.ProjectMemory == "obsidian-brain" {
-			m.Screen = ScreenProjectEngram
+			m.Screen = ScreenProjectRolePack
 		} else {
 			m.Screen = ScreenProjectMemory
 		}
@@ -1516,8 +1525,9 @@ func (m Model) handleSelection() (tea.Model, tea.Cmd) {
 
 	case ScreenProjectEngram:
 		m.ProjectEngram = m.Cursor == 0
-		m.Screen = ScreenProjectCI
+		m.Screen = ScreenProjectRolePack
 		m.Cursor = 0
+		m.RolePackSelected = make([]bool, len(rolePackIDMap))
 
 	case ScreenProjectCI:
 		cis := []string{"github", "gitlab", "woodpecker", "none"}
@@ -1535,6 +1545,7 @@ func (m Model) handleSelection() (tea.Model, tea.Cmd) {
 			m.Choices.ProjectMemory = m.ProjectMemory
 			m.Choices.ProjectCI = m.ProjectCI
 			m.Choices.ProjectEngram = m.ProjectEngram
+			m.Choices.ProjectRolePacks = m.ProjectRolePacks
 			m.ProjectLogLines = []string{}
 			m.Screen = ScreenProjectInstalling
 			return m, func() tea.Msg { return projectInstallStartMsg{} }
@@ -1653,6 +1664,9 @@ func (m Model) proceedToBackupOrInstall() (tea.Model, tea.Cmd) {
 
 // aiToolIDMap maps AI tool option index to tool ID
 var aiToolIDMap = []string{"claude", "opencode", "gemini", "copilot", "codex", "qwen"}
+
+// rolePackIDMap maps role pack option index to pack ID (0=developer, 1=pm-lead)
+var rolePackIDMap = []string{"developer", "pm-lead"}
 
 // ModuleCategory groups related module items for the category drill-down UI
 type ModuleCategory struct {
@@ -1873,9 +1887,8 @@ var moduleCategories = []ModuleCategory{
 			// Mobile (2)
 			{ID: "mobile-ionic-capacitor", Label: "Mobile: Ionic Capacitor"},
 			{ID: "mobile-mobile-ionic", Label: "Mobile: Mobile Ionic"},
-			// Prompt & Quality (2)
+			// Prompt (1)
 			{ID: "prompt-improver", Label: "Prompt: Prompt Improver"},
-			{ID: "quality-ghagga-review", Label: "Quality: Ghagga Review"},
 			// References (5)
 			{ID: "references-hooks-patterns", Label: "References: Hooks Patterns"},
 			{ID: "references-mcp-servers", Label: "References: MCP Servers"},
@@ -2134,6 +2147,57 @@ func (m Model) handleAIToolsKeys(key string) (tea.Model, tea.Cmd) {
 				m.Choices.InstallAIFramework = false
 				return m.proceedToBackupOrInstall()
 			}
+		}
+	case "esc", "backspace":
+		return m.goBackInstallStep()
+	}
+
+	return m, nil
+}
+
+func (m Model) handleRolePackKeys(key string) (tea.Model, tea.Cmd) {
+	options := m.GetCurrentOptions()
+	confirmIdx := len(options) - 1 // "✅ Confirm selection" is last option
+
+	switch key {
+	case "up", "k":
+		if m.Cursor > 0 {
+			m.Cursor--
+			// Skip separator
+			if m.Cursor < len(options) && strings.HasPrefix(options[m.Cursor], "───") && m.Cursor > 0 {
+				m.Cursor--
+			}
+		}
+	case "down", "j":
+		if m.Cursor < len(options)-1 {
+			m.Cursor++
+			if m.Cursor < len(options) && strings.HasPrefix(options[m.Cursor], "───") && m.Cursor < len(options)-1 {
+				m.Cursor++
+			}
+		}
+	case "enter", " ":
+		switch {
+		case m.Cursor == 0:
+			// Core — always on, no-op
+		case m.Cursor >= 1 && m.Cursor <= 2:
+			// Toggle Developer (cursor 1 → RolePackSelected[0]) or PM/Tech Lead (cursor 2 → RolePackSelected[1])
+			idx := m.Cursor - 1
+			if m.RolePackSelected != nil && idx < len(m.RolePackSelected) {
+				m.RolePackSelected[idx] = !m.RolePackSelected[idx]
+			}
+		case m.Cursor == 3:
+			// Separator — no-op
+		case m.Cursor == confirmIdx:
+			// Confirm — collect selected packs into ProjectRolePacks
+			packs := []string{"core"} // Core is always included
+			for i, sel := range m.RolePackSelected {
+				if sel && i < len(rolePackIDMap) {
+					packs = append(packs, rolePackIDMap[i])
+				}
+			}
+			m.ProjectRolePacks = packs
+			m.Screen = ScreenProjectCI
+			m.Cursor = 0
 		}
 	case "esc", "backspace":
 		return m.goBackInstallStep()

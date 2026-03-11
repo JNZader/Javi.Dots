@@ -50,6 +50,9 @@ These skills are copied to user's Claude/OpenCode config via the installer.
 | `sdd-apply` | Implement assigned task batches following specs and design | [GentlemanClaude/skills/sdd-apply](GentlemanClaude/skills/sdd-apply/SKILL.md) |
 | `sdd-verify` | Verify implementation against specs and tasks | [GentlemanClaude/skills/sdd-verify](GentlemanClaude/skills/sdd-verify/SKILL.md) |
 | `sdd-archive` | Close a change and archive final artifacts | [GentlemanClaude/skills/sdd-archive](GentlemanClaude/skills/sdd-archive/SKILL.md) |
+| `obsidian-braindump` | Braindump capture workflow for Obsidian Brain vaults | [GentlemanClaude/skills/obsidian-braindump](GentlemanClaude/skills/obsidian-braindump/SKILL.md) |
+| `obsidian-consolidation` | Weekly knowledge consolidation for Obsidian Brain | [GentlemanClaude/skills/obsidian-consolidation](GentlemanClaude/skills/obsidian-consolidation/SKILL.md) |
+| `obsidian-resource-capture` | Resource capture and annotation for Obsidian Brain | [GentlemanClaude/skills/obsidian-resource-capture](GentlemanClaude/skills/obsidian-resource-capture/SKILL.md) |
 
 ## Auto-invoke Skills
 

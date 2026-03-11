@@ -1697,8 +1697,10 @@ fi
 	return nil
 }
 
-// runProjectInitScript clones project-starter-framework and runs init-project.sh
-func runProjectInitScript(projectPath, memory, ci string, engram bool) error {
+// runProjectInitScript clones project-starter-framework and runs init-project.sh.
+// If memory is "obsidian-brain" and rolePacks is non-empty, it also copies
+// role pack templates into the project vault after the script finishes.
+func runProjectInitScript(projectPath, memory, ci string, engram bool, rolePacks []string) error {
 	cacheDir := filepath.Join(os.TempDir(), "project-starter-framework-install")
 
 	// Check cache freshness (1 hour)
@@ -1775,10 +1777,150 @@ func runProjectInitScript(projectPath, memory, ci string, engram bool) error {
 	if err != nil {
 		return fmt.Errorf("init-project.sh failed: %w", err)
 	}
+
+	// Copy role pack templates if obsidian-brain is selected and packs were chosen
+	if memory == "obsidian-brain" && len(rolePacks) > 0 {
+		if globalProgram != nil {
+			globalProgram.Send(projectInstallLogMsg{line: "Copying Obsidian Brain role pack templates..."})
+		}
+		repoRoot := findRepoDirForTemplates("")
+		if repoRoot == "" {
+			if globalProgram != nil {
+				globalProgram.Send(projectInstallLogMsg{line: "⚠ Could not locate template assets, skipping role pack templates"})
+			}
+		} else {
+			if err := copyRolePackTemplates(repoRoot, projectPath, rolePacks); err != nil {
+				if globalProgram != nil {
+					globalProgram.Send(projectInstallLogMsg{line: fmt.Sprintf("⚠ Role pack template copy failed: %v", err)})
+				}
+			} else {
+				if globalProgram != nil {
+					globalProgram.Send(projectInstallLogMsg{line: fmt.Sprintf("✓ Copied templates for packs: %s", strings.Join(rolePacks, ", "))})
+				}
+			}
+		}
+	}
+
 	return nil
 }
 
 // RunProjectInitScript exposes runProjectInitScript for CLI usage
-func RunProjectInitScript(projectPath, memory, ci string, engram bool) error {
-	return runProjectInitScript(projectPath, memory, ci, engram)
+func RunProjectInitScript(projectPath, memory, ci string, engram bool, rolePacks []string) error {
+	return runProjectInitScript(projectPath, memory, ci, engram, rolePacks)
+}
+
+// findRepoDirForTemplates locates the Javi.Dots repo root so we can find
+// GentlemanNvim/obsidian-brain/ template assets. It tries:
+// 1. The provided repoDir (used during full installation when repo is cloned)
+// 2. Walking up from the executable path
+// 3. Walking up from the current working directory
+func findRepoDirForTemplates(repoDir string) string {
+	marker := filepath.Join("GentlemanNvim", "obsidian-brain")
+
+	// 1. Check the provided repoDir
+	if repoDir != "" {
+		if _, err := os.Stat(filepath.Join(repoDir, marker)); err == nil {
+			return repoDir
+		}
+	}
+
+	// 2. Walk up from executable path
+	if exePath, err := os.Executable(); err == nil {
+		dir := filepath.Dir(exePath)
+		for i := 0; i < 10; i++ {
+			if _, err := os.Stat(filepath.Join(dir, marker)); err == nil {
+				return dir
+			}
+			parent := filepath.Dir(dir)
+			if parent == dir {
+				break
+			}
+			dir = parent
+		}
+	}
+
+	// 3. Walk up from current working directory
+	if cwd, err := os.Getwd(); err == nil {
+		dir := cwd
+		for i := 0; i < 10; i++ {
+			if _, err := os.Stat(filepath.Join(dir, marker)); err == nil {
+				return dir
+			}
+			parent := filepath.Dir(dir)
+			if parent == dir {
+				break
+			}
+			dir = parent
+		}
+	}
+
+	return ""
+}
+
+// copyRolePackTemplates copies selected role pack templates into the project vault.
+// repoDir is the path to the Javi.Dots repo root containing GentlemanNvim/obsidian-brain/.
+func copyRolePackTemplates(repoDir, projectPath string, rolePacks []string) error {
+	vaultDir := filepath.Join(projectPath, ".obsidian-brain")
+	templatesDir := filepath.Join(vaultDir, "templates")
+
+	// Create core vault folder structure
+	coreDirs := []string{
+		vaultDir,
+		filepath.Join(vaultDir, "inbox"),
+		filepath.Join(vaultDir, "resources"),
+		filepath.Join(vaultDir, "knowledge"),
+		templatesDir,
+		filepath.Join(vaultDir, ".obsidian"), // marker for obsidian.nvim plugin detection
+	}
+	for _, dir := range coreDirs {
+		if err := system.EnsureDir(dir); err != nil {
+			return fmt.Errorf("failed to create directory %s: %w", dir, err)
+		}
+	}
+
+	// Create role-specific directories
+	for _, pack := range rolePacks {
+		switch pack {
+		case "developer":
+			for _, dir := range []string{"architecture", "sessions", "debugging"} {
+				if err := system.EnsureDir(filepath.Join(vaultDir, dir)); err != nil {
+					return fmt.Errorf("failed to create developer directory %s: %w", dir, err)
+				}
+			}
+		case "pm-lead":
+			for _, dir := range []string{"meetings", "sprints", "risks", "briefs"} {
+				if err := system.EnsureDir(filepath.Join(vaultDir, dir)); err != nil {
+					return fmt.Errorf("failed to create pm-lead directory %s: %w", dir, err)
+				}
+			}
+		}
+	}
+
+	// Copy templates from each selected role pack
+	for _, pack := range rolePacks {
+		srcDir := filepath.Join(repoDir, "GentlemanNvim", "obsidian-brain", pack, "templates")
+		if _, err := os.Stat(srcDir); os.IsNotExist(err) {
+			continue // pack directory doesn't exist yet, skip gracefully
+		}
+		entries, err := os.ReadDir(srcDir)
+		if err != nil {
+			return fmt.Errorf("failed to read pack %s templates: %w", pack, err)
+		}
+		for _, entry := range entries {
+			if entry.IsDir() {
+				continue
+			}
+			src := filepath.Join(srcDir, entry.Name())
+			dst := filepath.Join(templatesDir, entry.Name())
+			data, err := os.ReadFile(src)
+			if err != nil {
+				return fmt.Errorf("failed to read template %s: %w", src, err)
+			}
+			if err := os.WriteFile(dst, data, 0644); err != nil {
+				return fmt.Errorf("failed to write template %s: %w", dst, err)
+			}
+		}
+	}
+
+	return nil
 }

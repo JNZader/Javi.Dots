@@ -15,32 +15,33 @@ var Version = "1.0.0"
 
 // CLI flags for non-interactive mode
 type cliFlags struct {
-	version        bool
-	help           bool
-	test           bool
-	dryRun         bool
-	nonInteractive bool
-	terminal       string
-	shell          string
-	windowMgr      string
-	nvim           bool
-	zed            bool
-	font           bool
-	backup         bool
-	aiTools        string
-	aiFramework    bool
-	aiPreset       string
-	aiModules      string
-	agentTeamsLite bool
-	initProject    bool
-	projectPath    string
-	projectMemory  string
-	projectCI      string
-	projectEngram  bool
-	skillInstall   string // comma-separated skill names to install
-	skillRemove    string // comma-separated skill names to remove
-	repoDir        string // override repo directory name
-	repoURL        string // override repo git URL
+	version         bool
+	help            bool
+	test            bool
+	dryRun          bool
+	nonInteractive  bool
+	terminal        string
+	shell           string
+	windowMgr       string
+	nvim            bool
+	zed             bool
+	font            bool
+	backup          bool
+	aiTools         string
+	aiFramework     bool
+	aiPreset        string
+	aiModules       string
+	agentTeamsLite  bool
+	initProject     bool
+	projectPath     string
+	projectMemory   string
+	projectCI       string
+	projectEngram   bool
+	projectRolePack string // comma-separated: "developer,pm-lead"
+	skillInstall    string // comma-separated skill names to install
+	skillRemove     string // comma-separated skill names to remove
+	repoDir         string // override repo directory name
+	repoURL         string // override repo git URL
 }
 
 func parseFlags() *cliFlags {
@@ -71,6 +72,8 @@ func parseFlags() *cliFlags {
 	flag.StringVar(&flags.projectMemory, "project-memory", "simple", "Memory module: obsidian-brain, vibekanban, engram, simple, none")
 	flag.StringVar(&flags.projectCI, "project-ci", "none", "CI provider: github, gitlab, woodpecker, none")
 	flag.BoolVar(&flags.projectEngram, "project-engram", false, "Add Engram alongside Obsidian Brain")
+	flag.StringVar(&flags.projectRolePack, "project-role-pack", "",
+		"Role packs for Obsidian Brain: developer,pm-lead (comma-separated)")
 	flag.StringVar(&flags.skillInstall, "skill-install", "", "Skills to install (comma-separated)")
 	flag.StringVar(&flags.skillRemove, "skill-remove", "", "Skills to remove (comma-separated)")
 	flag.StringVar(&flags.repoDir, "repo-dir", "", "Override repo directory name (default: Gentleman.Dots, env: REPO_DIR)")
@@ -141,6 +144,41 @@ func main() {
 	}
 }
 
+// parseRolePacks validates and parses the --project-role-pack flag value.
+// It ensures role packs require obsidian-brain memory, validates pack names,
+// and always prepends "core" for obsidian-brain memory (deduplicated).
+func parseRolePacks(rolePack string, memory string) ([]string, error) {
+	// Validate role pack requires obsidian-brain
+	if rolePack != "" && memory != "obsidian-brain" {
+		return nil, fmt.Errorf("--project-role-pack requires --project-memory=obsidian-brain")
+	}
+
+	// Parse and validate role packs
+	var rolePacks []string
+	if rolePack != "" {
+		validPacks := map[string]bool{"developer": true, "pm-lead": true}
+		for _, pack := range strings.Split(rolePack, ",") {
+			pack = strings.TrimSpace(strings.ToLower(pack))
+			if pack == "" {
+				continue
+			}
+			if pack == "core" {
+				continue // core is implicit
+			}
+			if !validPacks[pack] {
+				return nil, fmt.Errorf("invalid role pack: %s (valid: developer, pm-lead)", pack)
+			}
+			rolePacks = append(rolePacks, pack)
+		}
+	}
+	// Core is always included when obsidian-brain
+	if memory == "obsidian-brain" {
+		rolePacks = append([]string{"core"}, rolePacks...)
+	}
+
+	return rolePacks, nil
+}
+
 func runNonInteractive(flags *cliFlags) error {
 	// Handle project init
 	if flags.initProject {
@@ -179,6 +217,11 @@ func runNonInteractive(flags *cliFlags) error {
 			return fmt.Errorf("--project-engram requires --project-memory=obsidian-brain")
 		}
 
+		rolePacks, err := parseRolePacks(flags.projectRolePack, memory)
+		if err != nil {
+			return err
+		}
+
 		fmt.Println("📦 Initializing project...")
 		fmt.Printf("  Path:    %s\n", absPath)
 		fmt.Printf("  Memory:  %s\n", memory)
@@ -186,10 +229,13 @@ func runNonInteractive(flags *cliFlags) error {
 		if flags.projectEngram {
 			fmt.Printf("  Engram:  yes\n")
 		}
+		if len(rolePacks) > 0 {
+			fmt.Printf("  Packs:   %s\n", strings.Join(rolePacks, ", "))
+		}
 		fmt.Println()
 
 		tui.SetNonInteractiveMode(true)
-		if err := tui.RunProjectInitScript(absPath, memory, ci, flags.projectEngram); err != nil {
+		if err := tui.RunProjectInitScript(absPath, memory, ci, flags.projectEngram, rolePacks); err != nil {
 			return fmt.Errorf("project initialization failed: %w", err)
 		}
 		fmt.Println("✅ Project initialized successfully!")
@@ -465,6 +511,7 @@ Project Init Options:
   --project-memory=<m> Memory module: obsidian-brain, vibekanban, engram, simple, none (default: simple)
   --project-ci=<ci>    CI provider: github, gitlab, woodpecker, none (default: none)
   --project-engram     Add Engram alongside Obsidian Brain
+  --project-role-pack=<p>  Role packs: developer,pm-lead (comma-separated, core always included)
 
 Skill Manager Options:
   --skill-install=<s>  Skills to install (comma-separated names)
@@ -489,6 +536,9 @@ Examples:
 
   # Initialize a project
   gentleman.dots --non-interactive --init-project --project-path=/path/to/project --project-memory=obsidian-brain --project-ci=github
+
+  # Initialize with Obsidian Brain + developer pack
+  gentleman.dots --non-interactive --init-project --project-path=/path/to/project --project-memory=obsidian-brain --project-role-pack=developer
 
   # Install skills
   gentleman.dots --non-interactive --skill-install=react-19,typescript,tailwind-4

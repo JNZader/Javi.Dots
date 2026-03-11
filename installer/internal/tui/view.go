@@ -119,6 +119,8 @@ func (m Model) View() string {
 		s.WriteString(m.renderProjectPath())
 	case ScreenProjectStack, ScreenProjectMemory, ScreenProjectObsidianInstall, ScreenProjectEngram, ScreenProjectCI:
 		s.WriteString(m.renderSelection())
+	case ScreenProjectRolePack:
+		s.WriteString(m.renderRolePackSelection())
 	case ScreenProjectConfirm:
 		s.WriteString(m.renderProjectConfirm())
 	case ScreenProjectInstalling:
@@ -335,6 +337,44 @@ func (m Model) renderAIToolSelection() string {
 		}
 
 		s.WriteString(style.Render(cursor + checkbox + opt))
+		s.WriteString("\n")
+	}
+
+	s.WriteString("\n")
+	s.WriteString(HelpStyle.Render("↑/k up • ↓/j down • [Enter] toggle/confirm • [Esc] back"))
+
+	return s.String()
+}
+
+func (m Model) renderRolePackSelection() string {
+	var s strings.Builder
+
+	// Title
+	s.WriteString(TitleStyle.Render(m.GetScreenTitle()))
+	s.WriteString("\n")
+	s.WriteString(MutedStyle.Render(m.GetScreenDescription()))
+	s.WriteString("\n\n")
+
+	// Options with checkboxes
+	options := m.GetCurrentOptions()
+	for i, opt := range options {
+		// Separator line
+		if strings.HasPrefix(opt, "───") {
+			s.WriteString(MutedStyle.Render(opt))
+			s.WriteString("\n")
+			continue
+		}
+
+		cursor := "  "
+		style := UnselectedStyle
+		if i == m.Cursor {
+			cursor = "▸ "
+			style = SelectedStyle
+		}
+
+		// "Confirm selection" and checkbox-prefixed items don't need extra checkbox
+		// The options already include [x]/[ ] prefixes from GetCurrentOptions()
+		s.WriteString(style.Render(cursor + opt))
 		s.WriteString("\n")
 	}
 
@@ -2359,6 +2399,9 @@ func (m Model) renderProjectConfirm() string {
 			engram = "Yes"
 		}
 		s.WriteString(fmt.Sprintf("    Engram:  %s\n", engram))
+		if len(m.ProjectRolePacks) > 0 {
+			s.WriteString(fmt.Sprintf("    Packs:   %s\n", strings.Join(m.ProjectRolePacks, ", ")))
+		}
 	}
 	s.WriteString(fmt.Sprintf("    CI:      %s\n", m.ProjectCI))
 	s.WriteString("\n")

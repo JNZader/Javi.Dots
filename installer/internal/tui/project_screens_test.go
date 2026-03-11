@@ -398,7 +398,7 @@ func TestProjectEscapeBackNavigation(t *testing.T) {
 		}
 	})
 
-	t.Run("ScreenProjectCI with memory=obsidian-brain → Backspace → ScreenProjectEngram", func(t *testing.T) {
+	t.Run("ScreenProjectCI with memory=obsidian-brain → Backspace → ScreenProjectRolePack", func(t *testing.T) {
 		m := NewModel()
 		m.Screen = ScreenProjectCI
 		m.ProjectMemory = "obsidian-brain"
@@ -406,8 +406,8 @@ func TestProjectEscapeBackNavigation(t *testing.T) {
 		result, _ := m.Update(tea.KeyMsg{Type: tea.KeyBackspace})
 		nm := result.(Model)
 
-		if nm.Screen != ScreenProjectEngram {
-			t.Errorf("expected ScreenProjectEngram, got %d", nm.Screen)
+		if nm.Screen != ScreenProjectRolePack {
+			t.Errorf("expected ScreenProjectRolePack, got %d", nm.Screen)
 		}
 	})
 
@@ -548,6 +548,7 @@ func TestGetScreenTitleProjectScreens(t *testing.T) {
 		ScreenProjectMemory,
 		ScreenProjectObsidianInstall,
 		ScreenProjectEngram,
+		ScreenProjectRolePack,
 		ScreenProjectCI,
 		ScreenProjectConfirm,
 		ScreenProjectInstalling,
@@ -1299,6 +1300,498 @@ func TestListDirectories(t *testing.T) {
 		}
 		if dirs[0] != "alpha" || dirs[1] != "beta" || dirs[2] != "zeta" {
 			t.Errorf("expected sorted [alpha beta zeta], got %v", dirs)
+		}
+	})
+}
+
+// --- Role Pack screen tests ---
+
+func TestRolePackScreenOptions(t *testing.T) {
+	t.Run("has 5 options", func(t *testing.T) {
+		m := NewModel()
+		m.Screen = ScreenProjectRolePack
+		m.RolePackSelected = make([]bool, 2)
+		opts := m.GetCurrentOptions()
+		if len(opts) != 5 {
+			t.Errorf("expected 5 options, got %d: %v", len(opts), opts)
+		}
+	})
+
+	t.Run("title is non-empty", func(t *testing.T) {
+		m := NewModel()
+		m.Screen = ScreenProjectRolePack
+		title := m.GetScreenTitle()
+		if title == "" {
+			t.Error("expected non-empty title")
+		}
+	})
+
+	t.Run("description mentions role", func(t *testing.T) {
+		m := NewModel()
+		m.Screen = ScreenProjectRolePack
+		desc := m.GetScreenDescription()
+		if !strings.Contains(strings.ToLower(desc), "role") {
+			t.Errorf("expected description to mention role, got %q", desc)
+		}
+	})
+
+	t.Run("Core always shows [x]", func(t *testing.T) {
+		m := NewModel()
+		m.Screen = ScreenProjectRolePack
+		m.RolePackSelected = make([]bool, 2) // both false
+		opts := m.GetCurrentOptions()
+		if !strings.Contains(opts[0], "[x]") {
+			t.Errorf("expected Core option to contain [x], got %q", opts[0])
+		}
+	})
+
+	t.Run("toggled options reflect in labels", func(t *testing.T) {
+		m := NewModel()
+		m.Screen = ScreenProjectRolePack
+		m.RolePackSelected = []bool{true, false} // Developer on, PM off
+		opts := m.GetCurrentOptions()
+		if !strings.Contains(opts[1], "[x]") {
+			t.Errorf("expected Developer to show [x], got %q", opts[1])
+		}
+		if !strings.Contains(opts[2], "[ ]") {
+			t.Errorf("expected PM to show [ ], got %q", opts[2])
+		}
+	})
+}
+
+func TestRolePackCoreAlwaysOn(t *testing.T) {
+	t.Run("pressing Enter on Core does nothing", func(t *testing.T) {
+		m := NewModel()
+		m.Screen = ScreenProjectRolePack
+		m.RolePackSelected = make([]bool, 2)
+		m.Cursor = 0 // Core
+		result, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+		nm := result.(Model)
+		// Should stay on same screen, no toggle effect
+		if nm.Screen != ScreenProjectRolePack {
+			t.Errorf("expected ScreenProjectRolePack, got %d", nm.Screen)
+		}
+		// RolePackSelected should remain unchanged
+		if nm.RolePackSelected[0] || nm.RolePackSelected[1] {
+			t.Error("expected no RolePackSelected changes when pressing enter on Core")
+		}
+	})
+
+	t.Run("pressing Space on Core does nothing", func(t *testing.T) {
+		m := NewModel()
+		m.Screen = ScreenProjectRolePack
+		m.RolePackSelected = make([]bool, 2)
+		m.Cursor = 0 // Core
+		result, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{' '}})
+		nm := result.(Model)
+		if nm.Screen != ScreenProjectRolePack {
+			t.Errorf("expected ScreenProjectRolePack, got %d", nm.Screen)
+		}
+		if nm.LeaderMode {
+			t.Error("space on ScreenProjectRolePack should NOT activate leader mode")
+		}
+	})
+}
+
+func TestRolePackToggle(t *testing.T) {
+	t.Run("toggle Developer on then off", func(t *testing.T) {
+		m := NewModel()
+		m.Screen = ScreenProjectRolePack
+		m.RolePackSelected = make([]bool, 2)
+		m.Cursor = 1 // Developer Pack
+		result, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+		nm := result.(Model)
+		if !nm.RolePackSelected[0] {
+			t.Error("expected Developer Pack to be toggled on")
+		}
+		// Toggle off
+		nm.Cursor = 1
+		result2, _ := nm.Update(tea.KeyMsg{Type: tea.KeyEnter})
+		nm2 := result2.(Model)
+		if nm2.RolePackSelected[0] {
+			t.Error("expected Developer Pack to be toggled off")
+		}
+	})
+
+	t.Run("toggle PM/Tech Lead on then off", func(t *testing.T) {
+		m := NewModel()
+		m.Screen = ScreenProjectRolePack
+		m.RolePackSelected = make([]bool, 2)
+		m.Cursor = 2 // PM/Tech Lead Pack
+		result, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+		nm := result.(Model)
+		if !nm.RolePackSelected[1] {
+			t.Error("expected PM/Tech Lead Pack to be toggled on")
+		}
+		// Toggle off
+		nm.Cursor = 2
+		result2, _ := nm.Update(tea.KeyMsg{Type: tea.KeyEnter})
+		nm2 := result2.(Model)
+		if nm2.RolePackSelected[1] {
+			t.Error("expected PM/Tech Lead Pack to be toggled off")
+		}
+	})
+
+	t.Run("space also toggles selection", func(t *testing.T) {
+		m := NewModel()
+		m.Screen = ScreenProjectRolePack
+		m.RolePackSelected = make([]bool, 2)
+		m.Cursor = 1 // Developer Pack
+		result, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{' '}})
+		nm := result.(Model)
+		if !nm.RolePackSelected[0] {
+			t.Error("expected Developer Pack to be toggled on via space")
+		}
+	})
+
+	t.Run("pressing enter on separator is no-op", func(t *testing.T) {
+		m := NewModel()
+		m.Screen = ScreenProjectRolePack
+		m.RolePackSelected = make([]bool, 2)
+		m.Cursor = 3 // Separator
+		result, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+		nm := result.(Model)
+		if nm.Screen != ScreenProjectRolePack {
+			t.Errorf("expected to stay on ScreenProjectRolePack, got %d", nm.Screen)
+		}
+	})
+}
+
+func TestRolePackConfirm(t *testing.T) {
+	t.Run("confirm with Developer selected", func(t *testing.T) {
+		m := NewModel()
+		m.Screen = ScreenProjectRolePack
+		m.RolePackSelected = []bool{true, false} // Developer on, PM off
+		m.Cursor = 4                             // Confirm
+		result, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+		nm := result.(Model)
+		if nm.Screen != ScreenProjectCI {
+			t.Errorf("expected ScreenProjectCI, got %d", nm.Screen)
+		}
+		if nm.Cursor != 0 {
+			t.Errorf("expected cursor reset to 0, got %d", nm.Cursor)
+		}
+		// Should have core + developer
+		expected := []string{"core", "developer"}
+		if len(nm.ProjectRolePacks) != len(expected) {
+			t.Fatalf("expected %d packs, got %d: %v", len(expected), len(nm.ProjectRolePacks), nm.ProjectRolePacks)
+		}
+		for i, exp := range expected {
+			if nm.ProjectRolePacks[i] != exp {
+				t.Errorf("expected ProjectRolePacks[%d]=%q, got %q", i, exp, nm.ProjectRolePacks[i])
+			}
+		}
+	})
+
+	t.Run("confirm with both Developer and PM selected", func(t *testing.T) {
+		m := NewModel()
+		m.Screen = ScreenProjectRolePack
+		m.RolePackSelected = []bool{true, true} // Developer on, PM on
+		m.Cursor = 4                            // Confirm
+		result, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+		nm := result.(Model)
+		if nm.Screen != ScreenProjectCI {
+			t.Errorf("expected ScreenProjectCI, got %d", nm.Screen)
+		}
+		expected := []string{"core", "developer", "pm-lead"}
+		if len(nm.ProjectRolePacks) != len(expected) {
+			t.Fatalf("expected %d packs, got %d: %v", len(expected), len(nm.ProjectRolePacks), nm.ProjectRolePacks)
+		}
+		for i, exp := range expected {
+			if nm.ProjectRolePacks[i] != exp {
+				t.Errorf("expected ProjectRolePacks[%d]=%q, got %q", i, exp, nm.ProjectRolePacks[i])
+			}
+		}
+	})
+
+	t.Run("confirm with no optional packs still includes core", func(t *testing.T) {
+		m := NewModel()
+		m.Screen = ScreenProjectRolePack
+		m.RolePackSelected = []bool{false, false} // nothing selected
+		m.Cursor = 4                              // Confirm
+		result, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+		nm := result.(Model)
+		if nm.Screen != ScreenProjectCI {
+			t.Errorf("expected ScreenProjectCI, got %d", nm.Screen)
+		}
+		if len(nm.ProjectRolePacks) != 1 || nm.ProjectRolePacks[0] != "core" {
+			t.Errorf("expected [core], got %v", nm.ProjectRolePacks)
+		}
+	})
+}
+
+func TestRolePackBackNav(t *testing.T) {
+	t.Run("ESC from RolePack goes to Engram", func(t *testing.T) {
+		m := NewModel()
+		m.Screen = ScreenProjectRolePack
+		m.RolePackSelected = []bool{true, false}
+		m.ProjectRolePacks = []string{"core", "developer"}
+		result, _ := m.Update(tea.KeyMsg{Type: tea.KeyEsc})
+		nm := result.(Model)
+		if nm.Screen != ScreenProjectEngram {
+			t.Errorf("expected ScreenProjectEngram, got %d", nm.Screen)
+		}
+		if nm.RolePackSelected != nil {
+			t.Error("expected RolePackSelected to be nil after back nav")
+		}
+		if nm.ProjectRolePacks != nil {
+			t.Error("expected ProjectRolePacks to be nil after back nav")
+		}
+	})
+
+	t.Run("backspace from RolePack goes to Engram", func(t *testing.T) {
+		m := NewModel()
+		m.Screen = ScreenProjectRolePack
+		m.RolePackSelected = make([]bool, 2)
+		result, _ := m.Update(tea.KeyMsg{Type: tea.KeyBackspace})
+		nm := result.(Model)
+		if nm.Screen != ScreenProjectEngram {
+			t.Errorf("expected ScreenProjectEngram, got %d", nm.Screen)
+		}
+		if nm.RolePackSelected != nil {
+			t.Error("expected RolePackSelected to be nil after back nav")
+		}
+	})
+}
+
+func TestCIBackNavWithRolePack(t *testing.T) {
+	// Note: ScreenProjectCI uses handleSelectionKeys (backspace triggers goBackInstallStep).
+	// ESC is handled by handleEscape() which does NOT have a case for ScreenProjectCI,
+	// so only backspace triggers back navigation from CI screen.
+
+	t.Run("Backspace from CI with obsidian-brain goes to RolePack", func(t *testing.T) {
+		m := NewModel()
+		m.Screen = ScreenProjectCI
+		m.ProjectMemory = "obsidian-brain"
+		result, _ := m.Update(tea.KeyMsg{Type: tea.KeyBackspace})
+		nm := result.(Model)
+		if nm.Screen != ScreenProjectRolePack {
+			t.Errorf("expected ScreenProjectRolePack, got %d", nm.Screen)
+		}
+	})
+
+	t.Run("Backspace from CI without obsidian-brain goes to Memory", func(t *testing.T) {
+		m := NewModel()
+		m.Screen = ScreenProjectCI
+		m.ProjectMemory = "simple"
+		result, _ := m.Update(tea.KeyMsg{Type: tea.KeyBackspace})
+		nm := result.(Model)
+		if nm.Screen != ScreenProjectMemory {
+			t.Errorf("expected ScreenProjectMemory, got %d", nm.Screen)
+		}
+	})
+}
+
+func TestEngramForwardToRolePack(t *testing.T) {
+	t.Run("selecting on Engram goes to RolePack (not CI)", func(t *testing.T) {
+		m := NewModel()
+		m.Screen = ScreenProjectEngram
+		m.Cursor = 0 // "Yes, add Engram too"
+		result, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+		nm := result.(Model)
+		if nm.Screen != ScreenProjectRolePack {
+			t.Errorf("expected ScreenProjectRolePack, got %d", nm.Screen)
+		}
+		if nm.RolePackSelected == nil || len(nm.RolePackSelected) != 2 {
+			t.Error("expected RolePackSelected to be initialized with 2 elements")
+		}
+		if nm.ProjectEngram != true {
+			t.Error("expected ProjectEngram=true when cursor=0")
+		}
+	})
+
+	t.Run("declining Engram also goes to RolePack", func(t *testing.T) {
+		m := NewModel()
+		m.Screen = ScreenProjectEngram
+		m.Cursor = 1 // "No, just Obsidian Brain"
+		result, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+		nm := result.(Model)
+		if nm.Screen != ScreenProjectRolePack {
+			t.Errorf("expected ScreenProjectRolePack, got %d", nm.Screen)
+		}
+		if nm.ProjectEngram != false {
+			t.Error("expected ProjectEngram=false when cursor=1")
+		}
+	})
+}
+
+func TestRolePackCursorNavigation(t *testing.T) {
+	t.Run("down skips separator", func(t *testing.T) {
+		m := NewModel()
+		m.Screen = ScreenProjectRolePack
+		m.RolePackSelected = make([]bool, 2)
+		m.Cursor = 2 // PM/Tech Lead Pack
+		// Move down: should skip separator (3) and land on Confirm (4)
+		result, _ := m.Update(tea.KeyMsg{Type: tea.KeyDown})
+		nm := result.(Model)
+		if nm.Cursor != 4 {
+			t.Errorf("expected cursor at 4 (skipping separator), got %d", nm.Cursor)
+		}
+	})
+
+	t.Run("up skips separator", func(t *testing.T) {
+		m := NewModel()
+		m.Screen = ScreenProjectRolePack
+		m.RolePackSelected = make([]bool, 2)
+		m.Cursor = 4 // Confirm
+		// Move up: should skip separator (3) and land on PM/Tech Lead (2)
+		result, _ := m.Update(tea.KeyMsg{Type: tea.KeyUp})
+		nm := result.(Model)
+		if nm.Cursor != 2 {
+			t.Errorf("expected cursor at 2 (skipping separator), got %d", nm.Cursor)
+		}
+	})
+}
+
+// --- Warning 3: Confirm screen rendering with role packs ---
+
+func TestProjectConfirmShowsRolePacks(t *testing.T) {
+	t.Run("confirm screen shows role pack names for obsidian-brain", func(t *testing.T) {
+		m := NewModel()
+		m.Screen = ScreenProjectConfirm
+		m.ProjectPathInput = "/tmp/myproject"
+		m.ProjectStack = "go"
+		m.ProjectMemory = "obsidian-brain"
+		m.ProjectEngram = true
+		m.ProjectRolePacks = []string{"core", "developer"}
+		m.ProjectCI = "github"
+
+		output := m.View()
+
+		if !strings.Contains(output, "core") {
+			t.Error("expected confirm screen to contain 'core'")
+		}
+		if !strings.Contains(output, "developer") {
+			t.Error("expected confirm screen to contain 'developer'")
+		}
+		if !strings.Contains(output, "Packs") {
+			t.Error("expected confirm screen to contain 'Packs' label")
+		}
+	})
+
+	t.Run("confirm screen shows three role packs", func(t *testing.T) {
+		m := NewModel()
+		m.Screen = ScreenProjectConfirm
+		m.ProjectPathInput = "/tmp/myproject"
+		m.ProjectStack = "node"
+		m.ProjectMemory = "obsidian-brain"
+		m.ProjectEngram = false
+		m.ProjectRolePacks = []string{"core", "developer", "pm-lead"}
+		m.ProjectCI = "gitlab"
+
+		output := m.View()
+
+		if !strings.Contains(output, "core") {
+			t.Error("expected confirm screen to contain 'core'")
+		}
+		if !strings.Contains(output, "developer") {
+			t.Error("expected confirm screen to contain 'developer'")
+		}
+		if !strings.Contains(output, "pm-lead") {
+			t.Error("expected confirm screen to contain 'pm-lead'")
+		}
+	})
+
+	t.Run("confirm screen hides packs section for non-obsidian memory", func(t *testing.T) {
+		m := NewModel()
+		m.Screen = ScreenProjectConfirm
+		m.ProjectPathInput = "/tmp/myproject"
+		m.ProjectStack = "python"
+		m.ProjectMemory = "simple"
+		m.ProjectRolePacks = nil
+		m.ProjectCI = "none"
+
+		output := m.View()
+
+		if strings.Contains(output, "Packs") {
+			t.Error("expected confirm screen NOT to contain 'Packs' for non-obsidian memory")
+		}
+	})
+}
+
+// --- Warning 4: Role pack screen skipped when not obsidian-brain ---
+
+func TestRolePackScreenSkippedForNonObsidian(t *testing.T) {
+	t.Run("selecting 'simple' memory goes directly to CI screen", func(t *testing.T) {
+		m := NewModel()
+		m.Screen = ScreenProjectMemory
+		m.Cursor = 3 // simple
+
+		result, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+		nm := result.(Model)
+
+		if nm.ProjectMemory != "simple" {
+			t.Errorf("expected ProjectMemory='simple', got %q", nm.ProjectMemory)
+		}
+		if nm.Screen != ScreenProjectCI {
+			t.Errorf("expected ScreenProjectCI, got %d", nm.Screen)
+		}
+	})
+
+	t.Run("selecting 'none' memory goes directly to CI screen", func(t *testing.T) {
+		m := NewModel()
+		m.Screen = ScreenProjectMemory
+		m.Cursor = 4 // none
+
+		result, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+		nm := result.(Model)
+
+		if nm.ProjectMemory != "none" {
+			t.Errorf("expected ProjectMemory='none', got %q", nm.ProjectMemory)
+		}
+		if nm.Screen != ScreenProjectCI {
+			t.Errorf("expected ScreenProjectCI, got %d", nm.Screen)
+		}
+	})
+
+	t.Run("selecting 'engram' memory goes directly to CI screen", func(t *testing.T) {
+		m := NewModel()
+		m.Screen = ScreenProjectMemory
+		m.Cursor = 2 // engram
+
+		result, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+		nm := result.(Model)
+
+		if nm.ProjectMemory != "engram" {
+			t.Errorf("expected ProjectMemory='engram', got %q", nm.ProjectMemory)
+		}
+		if nm.Screen != ScreenProjectCI {
+			t.Errorf("expected ScreenProjectCI, got %d", nm.Screen)
+		}
+	})
+
+	t.Run("non-obsidian memory does NOT go to RolePack, ObsidianInstall, or Engram", func(t *testing.T) {
+		for _, tc := range []struct {
+			name   string
+			cursor int
+			memory string
+		}{
+			{"vibekanban", 1, "vibekanban"},
+			{"engram", 2, "engram"},
+			{"simple", 3, "simple"},
+			{"none", 4, "none"},
+		} {
+			t.Run(tc.name, func(t *testing.T) {
+				m := NewModel()
+				m.Screen = ScreenProjectMemory
+				m.Cursor = tc.cursor
+
+				result, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+				nm := result.(Model)
+
+				if nm.Screen == ScreenProjectRolePack {
+					t.Errorf("memory=%q should NOT go to ScreenProjectRolePack", tc.memory)
+				}
+				if nm.Screen == ScreenProjectObsidianInstall {
+					t.Errorf("memory=%q should NOT go to ScreenProjectObsidianInstall", tc.memory)
+				}
+				if nm.Screen == ScreenProjectEngram {
+					t.Errorf("memory=%q should NOT go to ScreenProjectEngram", tc.memory)
+				}
+				if nm.Screen != ScreenProjectCI {
+					t.Errorf("memory=%q: expected ScreenProjectCI, got %d", tc.memory, nm.Screen)
+				}
+			})
 		}
 	})
 }
