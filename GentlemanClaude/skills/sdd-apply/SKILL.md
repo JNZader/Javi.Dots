@@ -6,7 +6,7 @@ description: >
 license: MIT
 metadata:
   author: gentleman-programming
-  version: "2.0"
+  version: "2.1"
 ---
 
 ## Purpose
@@ -19,6 +19,11 @@ From the orchestrator:
 - Change name
 - The specific task(s) to implement (e.g., "Phase 1, tasks 1.1-1.3")
 - Artifact store mode (`engram | openspec | hybrid | none`)
+- `workdir` (optional) — absolute path to working directory. When present, the sub-agent operates in this directory instead of the project root and MUST NOT update `tasks.md`. Report completed tasks in your return summary instead. Used by the orchestrator for worktree-based parallel execution.
+
+### Worktree Mode
+
+When `workdir` is provided, the sub-agent works in that directory. All relative paths (including `openspec/changes/{change}/...`) resolve from `workdir`. The sub-agent doesn't need to know about git worktrees — it just works in the given directory.
 
 ## Execution and Persistence Contract
 
@@ -154,7 +159,9 @@ FOR EACH TASK:
 
 ### Step 4: Mark Tasks Complete
 
-Update `tasks.md` — change `- [ ]` to `- [x]` for completed tasks:
+**If `workdir` was provided (worktree mode):** Skip `tasks.md` updates entirely. Report completed tasks in your return summary instead. The orchestrator will update `tasks.md` centrally after merging all worktree branches.
+
+**If `workdir` was NOT provided (standard mode):** Update `tasks.md` — change `- [ ]` to `- [x]` for completed tasks:
 
 ```markdown
 ## Phase 1: Foundation

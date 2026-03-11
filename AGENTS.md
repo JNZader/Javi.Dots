@@ -305,6 +305,98 @@ The orchestrator MUST NOT read exploration outputs or merge them itself. Synthes
 6. Keep context minimal - pass file paths, not full file content
 7. NEVER run phase work inline as lead; always delegate
 
+### Parallel Apply with Worktrees
+
+When explicitly triggered, the orchestrator can run independent tasks in parallel using git worktrees. Each task gets its own isolated worktree and branch; sub-agents work simultaneously without interference.
+
+#### Trigger Conditions
+
+Parallel apply activates ONLY when explicitly triggered. **Default is always sequential apply.**
+
+Triggers (any one activates parallel mode):
+- User says: "aplica en paralelo", "parallel apply", "apply in parallel", "apply parallel"
+- Config `apply.parallel: true` in `openspec/config.yaml`
+
+If NONE of the above triggers are present, use sequential batch mode (current behavior). No worktrees are created.
+
+#### Config Schema
+
+```yaml
+apply:
+  parallel: false     # true to enable parallel apply
+  max_worktrees: 4    # cap on concurrent worktrees (default: 4)
+```
+
+#### Pre-Flight Checks
+
+Before creating worktrees, the orchestrator MUST verify:
+
+```
+1. Clean git state: `git status --porcelain` must return empty
+2. No leftover worktrees: `git worktree list` should show only the main worktree
+3. Current branch is not in a merge/rebase state
+
+If any check fails:
+- Report the specific issue to the user
+- Suggest cleanup commands (git worktree remove, git worktree prune, git merge --abort)
+- Abort parallel mode — do NOT proceed with worktree creation
+```
+
+#### Worktree Lifecycle
+
+```
+For each task to run in parallel (max: apply.max_worktrees, default 4):
+
+1. CREATE worktree:
+   git worktree add .worktrees/sdd-{change-name}-task-{id} -b sdd/{change-name}/task-{id}
+
+2. DISPATCH sub-agent with workdir:
+   Task(
+     description: 'apply task {id} for {change-name}',
+     prompt: '...
+       workdir: /absolute/path/.worktrees/sdd-{change-name}-task-{id}
+       ...'
+   )
+
+3. ALL Task calls MUST be in a SINGLE message (parallel execution).
+
+4. Wait for ALL sub-agents to complete.
+
+5. MERGE each branch sequentially into the current branch:
+   git merge --no-ff sdd/{change-name}/task-{id} -m "merge: task {id} from parallel apply"
+   - If conflict: STOP immediately. Report conflicting files and which task caused it.
+     Do NOT auto-resolve. Do NOT merge remaining branches.
+     Leave unmerged branches intact for user inspection.
+   - If success: continue to next branch.
+
+6. UPDATE tasks.md centrally based on sub-agent completion reports.
+   Sub-agents do NOT update tasks.md in worktree mode — the orchestrator does it
+   after all merges complete.
+
+7. CLEANUP each worktree:
+   git worktree remove .worktrees/sdd-{change-name}-task-{id}
+   git branch -d sdd/{change-name}/task-{id}
+   # After all worktrees removed:
+   git worktree prune
+```
+
+#### Cap Rule
+
+If more tasks than `max_worktrees` need parallel execution, batch them in waves:
+- First wave: run first N tasks in parallel (N = max_worktrees)
+- Wait for completion, merge all successful branches
+- Second wave: run next N tasks
+- Repeat until all tasks are dispatched
+
+#### Partial Failure Handling
+
+If some sub-agents succeed and others fail:
+1. Merge the successful branches first (in order)
+2. Report failed tasks to user with error details
+3. Leave failed worktrees intact for inspection
+4. User decides: retry failed tasks, fix manually, or abort
+5. Do NOT auto-retry failed tasks
+
 ### Skill Registry Loading
 
 Include this instruction in ALL sub-agent prompts:

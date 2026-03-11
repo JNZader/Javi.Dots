@@ -6,6 +6,9 @@ installer/dist/
 # E2E test artifacts
 installer/e2e/gentleman-installer-*
 
+# SDD worktree directories (parallel apply)
+.worktrees/
+
 # Generated AI instruction files (from AGENTS.md via ./skills/setup.sh)
 # AGENTS.md is the single source of truth - do not edit these directly
 CLAUDE.md
