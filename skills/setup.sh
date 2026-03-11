@@ -186,6 +186,14 @@ sync_opencode() {
         done
         log_success "Synced all skills to OpenCode"
     fi
+
+    # Copy _shared/ directory (convention files referenced by SDD skills)
+    local shared_dir="$REPO_ROOT/GentlemanClaude/skills/_shared"
+    if [ -d "$shared_dir" ]; then
+        mkdir -p "$opencode_dir/_shared"
+        cp "$shared_dir"/*.md "$opencode_dir/_shared/" 2>/dev/null || true
+        log_info "  → Copied _shared/"
+    fi
 }
 
 # Sync skills to Claude Code config directory
@@ -225,6 +233,15 @@ sync_claude_config() {
             fi
         done
         log_success "Synced all skills to ~/.claude/skills/"
+    fi
+
+    # Copy _shared/ directory (convention files referenced by SDD skills)
+    local shared_dir="$REPO_ROOT/GentlemanClaude/skills/_shared"
+    if [ -d "$shared_dir" ]; then
+        mkdir -p "$claude_dir/_shared"
+        chmod -R u+w "$claude_dir/_shared" 2>/dev/null || true
+        cp -f "$shared_dir"/*.md "$claude_dir/_shared/"
+        log_info "  → Copied _shared/"
     fi
 }
 

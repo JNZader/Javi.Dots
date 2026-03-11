@@ -1,4 +1,6 @@
-# Engram Artifact Convention (shared across all SDD skills)
+# Engram Artifact Convention (reference documentation)
+
+> **NOTE**: Critical engram calls (`mem_search`, `mem_save`, `mem_get_observation`) are now inlined directly in each skill's SKILL.md file. This document is supplementary reference — sub-agents do NOT need to read it to function correctly.
 
 ## Naming Rules
 
@@ -24,8 +26,25 @@ scope:     project
 | `apply-progress` | sdd-apply | Implementation progress (one per batch) |
 | `verify-report` | sdd-verify | Verification report |
 | `archive-report` | sdd-archive | Archive closure with lineage |
+| `state` | orchestrator | DAG state for recovery after compaction |
 
 **Exception**: `sdd-init` uses `sdd-init/{project-name}` as both title and topic_key (it's project-scoped, not change-scoped).
+
+### State Artifact
+
+The orchestrator persists DAG state after each phase transition to enable recovery after context compaction:
+
+```
+mem_save(
+  title: "sdd/{change-name}/state",
+  topic_key: "sdd/{change-name}/state",
+  type: "architecture",
+  project: "{project}",
+  content: "change: {change-name}\nphase: {last-phase}\nartifact_store: engram\nartifacts:\n  proposal: true\n  specs: true\n  design: false\n  tasks: false\ntasks_progress:\n  completed: []\n  pending: []\nlast_updated: {ISO date}"
+)
+```
+
+Recovery: `mem_search("sdd/{change-name}/state")` → `mem_get_observation(id)` → parse YAML → restore orchestrator state.
 
 ### Example
 
