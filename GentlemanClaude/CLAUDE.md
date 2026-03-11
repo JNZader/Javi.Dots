@@ -227,6 +227,112 @@ These rules apply to EVERY user request, not just SDD workflows.
 | `/sdd-verify`   | sdd-verify                                        | `~/.claude/skills/sdd-verify/SKILL.md`  |
 | `/sdd-archive`  | sdd-archive                                       | `~/.claude/skills/sdd-archive/SKILL.md` |
 
+### Multi-Perspective Explore
+
+When the user requests a deep, multi-angle exploration, the orchestrator fans out N parallel `sdd-explore` sub-agents — each with a different analytical perspective — then synthesizes their findings into one comprehensive `exploration.md`.
+
+#### Trigger Conditions
+
+Multi-perspective mode activates ONLY when explicitly triggered. **Default is always standard single-agent explore.**
+
+Triggers (any one activates multi-perspective):
+- User says: "explore deeply", "multi-perspective", "analizar a fondo", "explorar en profundidad", "explore from all angles"
+- Project config `openspec/config.yaml` contains `explore.mode: deep`
+
+If NONE of the above triggers are present, dispatch a single `sdd-explore` sub-agent as today. No fan-out, no synthesis.
+
+#### Default Perspectives
+
+When multi-perspective is triggered and no config overrides exist, use these 4 perspectives (max cap: 4):
+
+| Perspective | Focus |
+|-------------|-------|
+| `architecture` | Patterns, abstractions, integration points, coupling, extensibility |
+| `testing` | Testability, coverage gaps, edge cases, testing strategy |
+| `risk` | Security, breaking changes, backwards compatibility, failure modes |
+| `dx` | Developer experience, onboarding friction, documentation needs, API ergonomics |
+
+#### Config Reading
+
+If `openspec/config.yaml` exists, check for an `explore` section:
+
+```yaml
+explore:
+  mode: standard  # standard | deep
+  perspectives:    # optional override (max 4)
+    - architecture
+    - testing
+    - risk
+    - dx
+```
+
+- If `explore.mode: deep` → activate multi-perspective (even without trigger keywords)
+- If `explore.perspectives` is defined → use those perspectives instead of defaults
+- If more than 4 perspectives are listed → use only the first 4, warn that remaining were skipped
+- If `explore` section is absent → defaults apply (standard mode, default perspectives if triggered)
+
+#### Fan-Out Dispatch
+
+When multi-perspective is triggered, launch ALL perspective sub-agents in a **SINGLE message** (parallel execution). Do NOT launch them sequentially.
+
+For each perspective, create a Task call:
+
+```
+Task(
+  description: 'explore ({perspective_name}) for {change-name}',
+  prompt: 'You are an SDD explore sub-agent.
+  Read the skill file at ~/.claude/skills/sdd-explore/SKILL.md FIRST, then follow its instructions.
+
+  Perspective: {perspective_name}
+  Focus your ENTIRE exploration through the {perspective_name} lens.
+
+  CONTEXT:
+  - Project: {project path}
+  - Change: {change-name}
+  - Topic: {topic}
+  - Artifact store mode: {mode}
+
+  IMPORTANT: Do NOT persist exploration.md — the synthesis agent will produce the final artifact.
+  Return your exploration analysis in the structured format from Step 6 of the skill.
+
+  Return structured output with: status, executive_summary, perspective, artifacts, next_recommended, risks.'
+)
+```
+
+ALL Task calls MUST be in a SINGLE message to ensure parallel execution.
+
+#### Synthesis Dispatch
+
+After ALL perspective agents return, launch ONE synthesis sub-agent:
+
+```
+Task(
+  description: 'synthesis for {change-name} multi-perspective explore',
+  prompt: 'You are a synthesis agent. You have received N exploration reports, each from a different analytical perspective.
+
+  Combine them into ONE comprehensive exploration.md that:
+  - Merges overlapping findings (do not repeat)
+  - Highlights where perspectives AGREE (high confidence findings)
+  - Highlights where perspectives CONFLICT (needs resolution — explain which view you favor and why)
+  - Identifies BLIND SPOTS — what no perspective covered
+  - Preserves the standard exploration output format (Current State, Affected Areas, Approaches, Recommendation, Risks, Ready for Proposal)
+  - Adds a ### Perspectives section summarizing what each perspective contributed
+
+  CONTEXT:
+  - Project: {project path}
+  - Change: {change-name}
+  - Artifact store mode: {mode}
+
+  Perspective reports:
+  {paste the executive_summary + detailed findings from each perspective agent}
+
+  Persist the merged exploration.md using the active artifact store mode.
+  Return structured output with: status, executive_summary, artifacts, next_recommended, risks.'
+)
+```
+
+The orchestrator MUST NOT read exploration outputs or merge them itself. Synthesis is ALWAYS delegated.
+
 ### Available Skills
 
 - `sdd-init/SKILL.md` — Bootstrap project

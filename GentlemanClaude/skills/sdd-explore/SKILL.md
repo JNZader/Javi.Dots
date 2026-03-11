@@ -6,7 +6,7 @@ description: >
 license: MIT
 metadata:
   author: gentleman-programming
-  version: "2.0"
+  version: "2.1"
 ---
 
 ## Purpose
@@ -18,6 +18,7 @@ You are a sub-agent responsible for EXPLORATION. You investigate the codebase, t
 The orchestrator will give you:
 - A topic or feature to explore
 - Artifact store mode (`engram | openspec | hybrid | none`)
+- Perspective (optional) — analytical lens to focus through (e.g., "architecture", "risk", "testing", "dx"). When present, constrain ALL analysis to this perspective. When absent, explore generally.
 
 ## Execution and Persistence Contract
 
@@ -69,6 +70,29 @@ Before starting, load any existing project context and specs per the active conv
 - **openspec**: Read `openspec/config.yaml` and `openspec/specs/`.
 - **none**: Use whatever context the orchestrator passed in the prompt.
 
+### Perspective Mode (optional)
+
+The orchestrator may pass a `perspective` constraint along with the topic (e.g., `perspective: architecture`, `perspective: risk`, `perspective: testing`, `perspective: dx`).
+
+**When `perspective` IS provided:**
+- You are a **specialist**, not a generalist. Focus your ENTIRE analysis through that lens.
+- The perspective colors EVERYTHING: what you investigate in Step 3, what risks you identify, what approaches you compare, and what you recommend.
+- Prioritize findings relevant to your assigned perspective. Go deeper on your specialty rather than broader across all concerns.
+- You may still note critical findings outside your perspective, but flag them as "outside perspective scope" rather than analyzing them deeply.
+
+**When `perspective` is NOT provided:**
+- Behavior is exactly as it has always been: general-purpose exploration covering all relevant angles.
+- No changes to the 6-step process below.
+
+**Perspective focus examples:**
+
+| Perspective | Focus Areas |
+|-------------|------------|
+| `architecture` | Patterns, coupling, modularity, code organization, abstractions, integration points, extensibility |
+| `risk` | Breaking changes, migration risks, backward compatibility, failure modes, effort estimation, security |
+| `testing` | Testability, coverage gaps, edge cases, regression risk, CI impact, testing strategy |
+| `dx` | Developer experience, ergonomics, discoverability, learning curve, documentation needs, API design |
+
 ## What to Do
 
 ### Step 1: Load Skill Registry
@@ -86,6 +110,7 @@ From the registry, identify and read any skills whose triggers match your task. 
 Parse what the user wants to explore:
 - Is this a new feature? A bug fix? A refactor?
 - What domain does it touch?
+- If a `perspective` was provided, frame your entire analysis through that lens. Prioritize findings relevant to that perspective. You are a specialist, not a generalist.
 
 ### Step 3: Investigate the Codebase
 
@@ -149,6 +174,18 @@ If you skip this step, sdd-propose will not have your exploration context.
 
 Return EXACTLY this format to the orchestrator (and write the same content to `exploration.md` if saving):
 
+**When a `perspective` was provided**, use this title format and include perspective metadata:
+```markdown
+## Exploration: {topic} (Perspective: {perspective})
+```
+
+**When NO `perspective` was provided**, use the standard title:
+```markdown
+## Exploration: {topic}
+```
+
+Full template:
+
 ```markdown
 ## Exploration: {topic}
 
@@ -180,6 +217,8 @@ Return EXACTLY this format to the orchestrator (and write the same content to `e
 ### Ready for Proposal
 {Yes/No — and what the orchestrator should tell the user}
 ```
+
+**Note**: When returning the structured envelope to the orchestrator, include `perspective: {name}` in the returned metadata if a perspective was provided. Do NOT include perspective metadata when no perspective was given (backward compatibility).
 
 ## Rules
 
