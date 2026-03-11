@@ -6,7 +6,7 @@ description: >
 license: Apache-2.0
 metadata:
   author: gentleman-programming
-  version: "1.0"
+  version: "1.1"
 ---
 
 ## Purpose
@@ -147,22 +147,22 @@ tags:
 
 ## Thought
 
-We should migrate from session-based auth to JWT. The current session store is becoming a bottleneck with the new microservice architecture, and stateless auth would simplify the API gateway.
+We should migrate from session-based auth to [[JWT]]. The current session store is becoming a bottleneck with the new [[microservice-architecture]], and [[stateless-auth]] would simplify the [[api-gateway]].
 
 ## Context
 
-Came up during the API gateway design review. Current session store hits Redis for every request, adding ~15ms latency.
+Came up during the [[api-gateway]] design review. Current session store hits [[Redis]] for every request, adding ~15ms latency.
 
 ## Code Reference
 
 - File: `services/auth/session.go:89`
-- Pattern: Stateless auth via JWT access + refresh tokens
-- Impact: Removes Redis dependency for auth, simplifies API gateway routing
+- Pattern: [[stateless-auth]] via [[JWT]] access + refresh tokens
+- Impact: Removes [[Redis]] dependency for auth, simplifies [[api-gateway]] routing
 
 ## Technical Decision
 
-- Decision: Migrate to JWT with short-lived access tokens (15min) + refresh tokens (7d)
-- Rationale: Stateless auth eliminates session store bottleneck
+- Decision: Migrate to [[JWT]] with short-lived access tokens (15min) + refresh tokens (7d)
+- Rationale: [[stateless-auth]] eliminates session store bottleneck
 - Alternatives: Sticky sessions (rejected — breaks horizontal scaling), encrypted cookies (rejected — size limits)
 - Follow-up: Consider creating a full [[ADR]] for this.
 
@@ -170,7 +170,58 @@ Came up during the API gateway design review. Current session store hits Redis f
 
 - [[api-gateway-design]]
 - [[redis-performance-issues]]
+
+## Entities
+
+- **Technologies**: [[JWT]], [[Redis]]
+- **Patterns**: [[stateless-auth]], [[microservice-architecture]]
+- **Components**: [[api-gateway]]
 ```
+
+## Entity Extraction
+
+After generating the braindump content, perform an entity extraction pass. Scan all sections for key entities and wrap them in `[[wikilinks]]` inline to build Obsidian graph connectivity.
+
+### Extraction Rules
+
+1. **Scan all generated sections** — Extract entities from `## Thought`, `## Context`, `## Code Reference`, `## Technical Decision`, `## Stakeholder Impact`, and `## Action Required`.
+2. **Wrap in `[[wikilinks]]`** — Each extracted entity becomes a `[[wiki-link]]` inline where it naturally appears. Do NOT create a separate list of bare entities — they live in context.
+3. **Deduplicate** — If the same entity appears multiple times, only wikilink the FIRST occurrence.
+4. **Be selective** — Only extract entities that would be genuinely useful as standalone notes. Braindumps are fast and raw — don't over-link. Aim for 2-6 entities per braindump.
+
+### Entity Types by Role Pack
+
+**Core (always active):**
+- People and authors mentioned
+- Organizations and companies
+- Specific products, tools, or services
+- Concepts and methodologies
+
+**Developer Pack (when active):**
+- Technologies, languages, and frameworks (e.g., `[[Go]]`, `[[React]]`)
+- Libraries and packages (e.g., `[[Bubbletea]]`, `[[pgx]]`)
+- Design patterns and architecture concepts (e.g., `[[hexagonal-architecture]]`, `[[CQRS]]`)
+- APIs, protocols, and infrastructure (e.g., `[[Redis]]`, `[[JWT]]`)
+
+**PM/Tech Lead Pack (when active):**
+- People and team members (e.g., `[[John-Smith]]`, `[[platform-team]]`)
+- Companies and competitors (e.g., `[[Stripe]]`, `[[Vercel]]`)
+- Products, features, and initiatives (e.g., `[[onboarding-v2]]`, `[[billing-module]]`)
+- Metrics and KPIs (e.g., `[[p99-latency]]`, `[[NPS]]`)
+
+### Entities Section
+
+After extraction, add an `## Entities` section at the end of the note listing all extracted entities grouped by type:
+
+```markdown
+## Entities
+
+- **Technologies**: [[Go]], [[Redis]]
+- **Patterns**: [[JWT]], [[stateless-auth]]
+- **Components**: [[api-gateway]], [[auth-service]]
+```
+
+Only include categories that have entities. If a category would be empty, omit it.
 
 ## Critical Rules
 
@@ -182,3 +233,4 @@ Came up during the API gateway design review. Current session store hits Redis f
 6. **No external dependencies** — This skill generates pure markdown. No API calls, no plugins, no file system scanning beyond vault detection.
 7. **Respect the template** — Role-aware sections are ADDITIONS, never replacements for the core template sections.
 8. **Ask before writing** — If vault location is detected, confirm with the user before writing the file. If generating inline, just output the markdown.
+9. **Entity extraction is mandatory** — Every braindump MUST include an `## Entities` section. Extract entities inline as `[[wikilinks]]` in the body text AND list them grouped by type at the end. Keep it light (2-6 entities) — speed over completeness.

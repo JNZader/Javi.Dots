@@ -6,7 +6,7 @@ description: >
 license: Apache-2.0
 metadata:
   author: gentleman-programming
-  version: "1.0"
+  version: "1.1"
 ---
 
 ## Purpose
@@ -174,28 +174,84 @@ tags:
 
 ## Top Insights
 
-- The auth migration keeps coming up in different contexts — it's blocking both the API gateway work and the mobile app team. See [[migrate-auth-to-jwt]] and [[api-gateway-design]].
-- We're spending more time on debugging than building. Three separate debug sessions this week on memory-related issues. See [[debug-memory-leak]], [[debug-oom-staging]], [[debug-gc-pressure]].
-- The new onboarding flow is getting positive early feedback but needs accessibility review. See [[onboarding-v2-feedback]].
+- The [[JWT]] auth migration keeps coming up in different contexts — it's blocking both the [[api-gateway]] work and the [[mobile-app-team]]. See [[migrate-auth-to-jwt]] and [[api-gateway-design]].
+- We're spending more time on debugging than building. Three separate debug sessions this week on [[memory-management]] issues. See [[debug-memory-leak]], [[debug-oom-staging]], [[debug-gc-pressure]].
+- The new [[onboarding-v2]] is getting positive early feedback but needs [[accessibility]] review. See [[onboarding-v2-feedback]].
 
 ## Connections Made
 
-- [[migrate-auth-to-jwt]] relates to [[api-gateway-design]] — the JWT decision directly simplifies the gateway routing layer.
-- [[debug-memory-leak]] and [[debug-gc-pressure]] share a root cause: the connection pool configuration in the new database driver.
-- Theme: Infrastructure stability is the hidden blocker for feature velocity this sprint.
+- [[migrate-auth-to-jwt]] relates to [[api-gateway-design]] — the [[JWT]] decision directly simplifies the gateway routing layer.
+- [[debug-memory-leak]] and [[debug-gc-pressure]] share a root cause: the [[connection-pool]] configuration in the new database driver.
+- Theme: [[infrastructure-stability]] is the hidden blocker for feature velocity this sprint.
 
 ## Open Questions
 
-- Should we pause feature work to address the memory issues first?
-- Who owns the accessibility review for onboarding v2?
-- Is the JWT migration timeline realistic given current blockers?
+- Should we pause feature work to address the [[memory-management]] issues first?
+- Who owns the [[accessibility]] review for [[onboarding-v2]]?
+- Is the [[JWT]] migration timeline realistic given current blockers?
 
 ## Action Items
 
-- [ ] Create ADR for connection pool configuration
-- [ ] Schedule accessibility review for onboarding v2
-- [ ] Re-estimate JWT migration with the memory fix dependency
+- [ ] Create ADR for [[connection-pool]] configuration
+- [ ] Schedule [[accessibility]] review for [[onboarding-v2]]
+- [ ] Re-estimate [[JWT]] migration with the memory fix dependency
+
+## Entities
+
+- **Technologies**: [[JWT]]
+- **Architecture**: [[connection-pool]], [[api-gateway]]
+- **Components**: [[onboarding-v2]]
+- **Teams**: [[mobile-app-team]]
+- **Themes**: [[memory-management]], [[infrastructure-stability]], [[accessibility]]
 ```
+
+## Entity Extraction
+
+During consolidation, perform an entity extraction pass across ALL source notes being synthesized. This is where entity extraction is MOST powerful — the consolidation connects entities across multiple notes, revealing the graph structure of your thinking.
+
+### Extraction Rules
+
+1. **Scan all generated sections** — Extract entities from `## Top Insights`, `## Connections Made`, `## Technical Patterns`, `## Team Patterns`, `## Code Health Signals`, and `## Leadership Actions`.
+2. **Wrap in `[[wikilinks]]`** — Each extracted entity becomes a `[[wiki-link]]` inline where it naturally appears.
+3. **Deduplicate** — If the same entity appears multiple times across sections, only wikilink the FIRST occurrence.
+4. **Cross-note entities are high value** — Entities that appear in MULTIPLE source notes are the most important to extract. These reveal the hidden connections in the knowledge graph.
+5. **Be more aggressive than braindumps** — Consolidations are synthesis artifacts. Extract more entities (5-15 per consolidation) since the whole point is connecting knowledge.
+
+### Entity Types by Role Pack
+
+**Core (always active):**
+- Recurring themes and concepts
+- People mentioned across notes
+- Projects, products, and initiatives
+- Tools and services referenced
+
+**Developer Pack (when active):**
+- Technologies appearing across multiple sessions (e.g., `[[Go]]`, `[[PostgreSQL]]`)
+- Architecture patterns being discussed (e.g., `[[CQRS]]`, `[[event-sourcing]]`)
+- Codebase areas with recurring issues (e.g., `[[auth-service]]`, `[[connection-pool]]`)
+- Tech debt items surfacing repeatedly (e.g., `[[N+1-queries]]`, `[[memory-leaks]]`)
+
+**PM/Tech Lead Pack (when active):**
+- Team members and stakeholders (e.g., `[[platform-team]]`, `[[Sarah-PM]]`)
+- Recurring blockers and risks (e.g., `[[vendor-dependency]]`, `[[hiring-bottleneck]]`)
+- Strategic themes (e.g., `[[platform-migration]]`, `[[developer-experience]]`)
+- Metrics trending over time (e.g., `[[deployment-frequency]]`, `[[lead-time]]`)
+
+### Entities Section
+
+After extraction, add an `## Entities` section at the end of the consolidation listing ALL extracted entities grouped by type. This section serves as a quick index for the consolidation:
+
+```markdown
+## Entities
+
+- **Technologies**: [[Go]], [[PostgreSQL]], [[Redis]]
+- **Architecture**: [[connection-pool]], [[JWT]], [[stateless-auth]]
+- **Components**: [[auth-service]], [[api-gateway]], [[onboarding-v2]]
+- **People**: [[platform-team]]
+- **Themes**: [[infrastructure-stability]], [[memory-management]]
+```
+
+Only include categories that have entities. If a category would be empty, omit it.
 
 ## Critical Rules
 
@@ -207,3 +263,4 @@ tags:
 6. **Ask for context** — If the user hasn't provided their recent notes, ask them to share or describe what they've been working on. Do not fabricate source material.
 7. **One consolidation per period** — Each consolidation covers a specific time period. Do not mix periods in one note.
 8. **Role sections are additions** — Role-aware sections supplement the core template, they never replace `## Top Insights`, `## Connections Made`, `## Open Questions`, or `## Action Items`.
+9. **Entity extraction is mandatory** — Every consolidation MUST include an `## Entities` section. Extract entities inline as `[[wikilinks]]` in the body text AND list them grouped by type at the end. Be aggressive (5-15 entities) — consolidations are where graph connectivity shines.

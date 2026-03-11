@@ -6,7 +6,7 @@ description: >
 license: Apache-2.0
 metadata:
   author: gentleman-programming
-  version: "1.0"
+  version: "1.1"
 ---
 
 ## Purpose
@@ -154,21 +154,21 @@ tags:
 
 ## Summary
 
-Comprehensive guide on idiomatic error handling in Go, covering custom error types, error wrapping with `%w`, sentinel errors, and the `errors.Is`/`errors.As` patterns introduced in Go 1.13. Particularly relevant for teams migrating from exception-based languages.
+Comprehensive guide on idiomatic error handling in [[Go]], covering custom error types, [[error-wrapping]] with `%w`, [[sentinel-errors]], and the `errors.Is`/`errors.As` patterns introduced in Go 1.13. Particularly relevant for teams migrating from exception-based languages.
 
 ## Key Takeaways
 
 - Always wrap errors with context using `fmt.Errorf("operation failed: %w", err)` to preserve the error chain
-- Use sentinel errors (`var ErrNotFound = errors.New(...)`) for expected error conditions that callers need to check
+- Use [[sentinel-errors]] (`var ErrNotFound = errors.New(...)`) for expected error conditions that callers need to check
 - Prefer `errors.Is()` over `==` comparison to handle wrapped errors correctly
 - Custom error types should implement `Error() string` and optionally `Unwrap() error`
 - Avoid `panic()` for expected error conditions — reserve it for truly unrecoverable states
 
 ## Technical Relevance
 
-- **Applies to**: Error handling across all Go services, especially `services/auth/` and `services/api-gateway/`
-- **Technology**: Go 1.21+
-- **Pattern**: Error wrapping chain with sentinel errors at package boundaries
+- **Applies to**: Error handling across all [[Go]] services, especially `services/auth/` and `services/api-gateway/`
+- **Technology**: [[Go]] 1.21+
+- **Pattern**: [[error-wrapping]] chain with [[sentinel-errors]] at package boundaries
 - **Try it**: Refactor the auth service error handling to use wrapped errors instead of string matching
 
 ## Code Snippets
@@ -194,7 +194,60 @@ if err := db.Query(ctx, query); err != nil {
 
 - [[tech-debt-error-handling]]
 - [[coding-session-auth-refactor]]
+
+## Entities
+
+- **Technologies**: [[Go]]
+- **Patterns**: [[error-wrapping]], [[sentinel-errors]]
 ```
+
+## Entity Extraction
+
+After generating the note content, perform an entity extraction pass. Scan the summary, takeaways, and role-specific sections for key entities and wrap them in `[[wikilinks]]` to build Obsidian graph connectivity.
+
+### Extraction Rules
+
+1. **Scan all generated sections** — Extract entities from `## Summary`, `## Key Takeaways`, `## Technical Relevance`, `## Strategic Relevance`, and `## Discussion Points`.
+2. **Wrap in `[[wikilinks]]`** — Each extracted entity becomes a `[[wiki-link]]` inline where it naturally appears. Do NOT create a separate list of bare entities — they live in context.
+3. **Deduplicate** — If the same entity appears multiple times, only wikilink the FIRST occurrence.
+4. **Be selective** — Only extract entities that would be genuinely useful as standalone notes. Generic words like "performance" or "testing" are too broad unless they refer to a specific concept in the user's domain.
+
+### Entity Types by Role Pack
+
+**Core (always active):**
+- People and authors mentioned
+- Organizations and companies
+- Specific products, tools, or services
+- Concepts and methodologies
+
+**Developer Pack (when active):**
+- Technologies, languages, and frameworks (e.g., `[[Go]]`, `[[React]]`, `[[PostgreSQL]]`)
+- Libraries and packages (e.g., `[[Bubbletea]]`, `[[pgx]]`)
+- Design patterns and principles (e.g., `[[hexagonal-architecture]]`, `[[CQRS]]`)
+- APIs and protocols (e.g., `[[gRPC]]`, `[[WebSocket]]`, `[[REST]]`)
+- Specific error types or known issues (e.g., `[[N+1-query-problem]]`)
+
+**PM/Tech Lead Pack (when active):**
+- People and team members (e.g., `[[John-Smith]]`, `[[platform-team]]`)
+- Companies and competitors (e.g., `[[Stripe]]`, `[[Vercel]]`)
+- Products and features (e.g., `[[onboarding-v2]]`, `[[billing-module]]`)
+- Metrics and KPIs (e.g., `[[p99-latency]]`, `[[NPS]]`, `[[churn-rate]]`)
+- Processes and frameworks (e.g., `[[sprint-planning]]`, `[[OKRs]]`)
+
+### Entities Section
+
+After extraction, add an `## Entities` section at the end of the note (before frontmatter closing if applicable) listing all extracted entities grouped by type:
+
+```markdown
+## Entities
+
+- **Technologies**: [[Go]], [[PostgreSQL]], [[Redis]]
+- **Patterns**: [[error-wrapping]], [[sentinel-errors]]
+- **People**: [[Rob-Pike]]
+- **Tools**: [[golangci-lint]]
+```
+
+Only include categories that have entities. If a category would be empty, omit it.
 
 ## Critical Rules
 
@@ -207,3 +260,4 @@ if err := db.Query(ctx, query); err != nil {
 7. **One resource per note** — Each capture is for a single URL/resource. If the user shares multiple URLs, create separate notes.
 8. **Role sections are additions** — Role-aware sections supplement the core template, they never replace `## Source`, `## Summary`, or `## Key Takeaways`.
 9. **Respect the user's description** — If the user provides their own notes about why the resource matters, incorporate their perspective into the summary and takeaways rather than overriding it.
+10. **Entity extraction is mandatory** — Every resource capture MUST include an `## Entities` section. Extract entities inline as `[[wikilinks]]` in the body text AND list them grouped by type at the end.
