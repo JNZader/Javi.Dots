@@ -245,6 +245,38 @@ sync_claude_config() {
     fi
 }
 
+# Sync hook scripts to Claude Code config directory
+sync_hooks() {
+    local hooks_src="$REPO_ROOT/GentlemanClaude/hooks"
+    local hooks_dest="$HOME/.claude/hooks"
+
+    log_info "Syncing hooks to ~/.claude/hooks/..."
+
+    if [ ! -d "$hooks_src" ]; then
+        log_warning "No hooks directory found at $hooks_src"
+        return
+    fi
+
+    mkdir -p "$hooks_dest"
+
+    for hook_file in "$hooks_src"/*.sh; do
+        [ -f "$hook_file" ] || continue
+        local hook_name=$(basename "$hook_file")
+        local dest_file="$hooks_dest/$hook_name"
+
+        # No-clobber: only copy if destination does NOT already exist
+        if [ ! -f "$dest_file" ]; then
+            cp "$hook_file" "$dest_file"
+            chmod +x "$dest_file"
+            log_info "  → Copied $hook_name"
+        else
+            log_info "  → Skipped $hook_name (already exists)"
+        fi
+    done
+
+    log_success "Synced hooks to ~/.claude/hooks/"
+}
+
 # Generate all formats for a single AGENTS.md
 generate_all_for_file() {
     local agents_file="$1"
@@ -296,10 +328,11 @@ show_menu() {
     echo "  ${CYAN}6)${NC} Sync to ~/.claude/skills/"
     echo "  ${CYAN}7)${NC} Sync to OpenCode config"
     echo "  ${CYAN}8)${NC} Sync to all user configs"
+    echo "  ${CYAN}9)${NC} Sync hooks to ~/.claude/hooks/"
     echo ""
     echo "  ${CYAN}0)${NC} Exit"
     echo ""
-    printf "Enter choice [0-8]: "
+    printf "Enter choice [0-9]: "
 }
 
 handle_menu_choice() {
@@ -336,6 +369,10 @@ handle_menu_choice() {
         8)
             sync_claude_config
             sync_opencode
+            sync_hooks
+            ;;
+        9)
+            sync_hooks
             ;;
         0)
             log_info "Exiting..."
@@ -370,9 +407,10 @@ Options:
   --copilot     Generate .github/copilot-instructions.md
   --codex       Generate CODEX.md from AGENTS.md
   --all         Generate all format-specific files
-  --sync-claude Sync skills to ~/.claude/skills/
+  --sync-claude Sync skills + hooks to ~/.claude/
   --sync-opencode Sync skills to OpenCode config
-  --sync-all    Sync skills to all user config directories
+  --sync-hooks  Sync hooks to ~/.claude/hooks/
+  --sync-all    Sync skills + hooks to all user config directories
   --help        Show this help message
 
 Examples:
@@ -409,13 +447,18 @@ parse_args() {
             ;;
         --sync-claude)
             sync_claude_config
+            sync_hooks
             ;;
         --sync-opencode)
             sync_opencode
             ;;
+        --sync-hooks)
+            sync_hooks
+            ;;
         --sync-all)
             sync_claude_config
             sync_opencode
+            sync_hooks
             ;;
         --help|-h)
             show_help

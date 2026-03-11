@@ -6,7 +6,7 @@ description: >
 license: Apache-2.0
 metadata:
   author: gentleman-programming
-  version: "1.2"
+  version: "1.3"
 ---
 
 ## Purpose
@@ -35,7 +35,7 @@ Trigger this skill when the user says any of:
 4. **Generate consolidation note** — Fill the `consolidation.md` template with synthesized insights.
 5. **Create wiki-links** — Reference ALL source notes using `[[wiki-link]]` syntax.
 6. **Surface action items** — Extract any implied or explicit next steps from the source material.
-7. **Generate Mind Map** — Build a `markmap` fenced code block from the entities and connections identified in steps 3-6. Use 2-3 levels: period as root, insight themes as branches, individual `[[entity]]` wikilinks as leaves. Keep it concise (max 3 levels deep, max 15 leaf nodes). Place it in a `## Mind Map` section after `## Entities`.
+7. **Generate Mind Map** — Build a `markmap` fenced code block from the entities and connections identified in steps 3-6. Use 2-3 levels: period as root, insight themes as branches, individual entities as leaves. **Leaf nodes MUST use `[[wikilinked entity]]` syntax** — never plain text. Reuse the exact same `[[wikilinks]]` extracted in the `## Entities` section; do NOT introduce new entities. This serves dual purpose: visual tree structure in markmap AND Obsidian graph connectivity when the note is opened. Keep it concise (max 3 levels deep, max 15 leaf nodes). Place it in a `## Mind Map` section after `## Entities`.
 8. **Save or output** — Write to `knowledge/` directory if vault is accessible, otherwise output inline.
 
 ## Role-Aware Behavior
@@ -86,6 +86,8 @@ tags:
 
 ## Mind Map
 
+> Wikilinks in markmap nodes serve dual purpose: visual tree structure AND Obsidian graph connectivity when the note is opened.
+
 (markmap code block — use triple backticks with `markmap` language identifier)
 # <Period>
 
@@ -97,7 +99,7 @@ tags:
 - [[entity-3]]
 
 ## Connections
-- [[entity-1]] ↔ [[entity-3]]
+- [[entity-1]] → root cause of [[entity-3]]
 (end markmap code block)
 ```
 
@@ -233,17 +235,15 @@ tags:
 # Week 2, Jan 2025
 
 ## Auth Migration
-- [[JWT]]
-- [[api-gateway]]
-- [[mobile-app-team]]
+- [[JWT]] migration blocking [[api-gateway]]
+- [[mobile-app-team]] waiting on auth
 
 ## Infrastructure Stability
-- [[connection-pool]]
-- [[memory-management]]
+- [[connection-pool]] → root cause of [[memory-management]]
+- [[infrastructure-stability]] blocking feature velocity
 
 ## User Experience
-- [[onboarding-v2]]
-- [[accessibility]]
+- [[onboarding-v2]] needs [[accessibility]] review
 (end markmap code block)
 ```
 
@@ -306,4 +306,4 @@ Only include categories that have entities. If a category would be empty, omit i
 7. **One consolidation per period** — Each consolidation covers a specific time period. Do not mix periods in one note.
 8. **Role sections are additions** — Role-aware sections supplement the core template, they never replace `## Top Insights`, `## Connections Made`, `## Open Questions`, or `## Action Items`.
 9. **Entity extraction is mandatory** — Every consolidation MUST include an `## Entities` section. Extract entities inline as `[[wikilinks]]` in the body text AND list them grouped by type at the end. Be aggressive (5-15 entities) — consolidations are where graph connectivity shines.
-10. **Mind Map is mandatory** — Every consolidation MUST include a `## Mind Map` section after `## Entities`. The mind map reuses entities already extracted — do NOT introduce new entities in the map. Keep it concise: max 3 levels deep, max 15 leaf nodes. Use `[[wikilinks]]` for entity leaves.
+10. **Mind Map is mandatory** — Every consolidation MUST include a `## Mind Map` section after `## Entities`. The mind map reuses entities already extracted — do NOT introduce new entities in the map. Keep it concise: max 3 levels deep, max 15 leaf nodes. **Leaf nodes MUST use `[[wikilinks]]`** matching the entities already extracted in the `## Entities` section — never plain text. Wikilinks in markmap nodes serve dual purpose: visual tree structure AND Obsidian graph connectivity when the note is opened.

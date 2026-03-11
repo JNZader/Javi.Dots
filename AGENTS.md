@@ -55,6 +55,51 @@ These skills are copied to user's Claude/OpenCode config via the installer.
 | `obsidian-resource-capture` | Resource capture and annotation for Obsidian Brain | [GentlemanClaude/skills/obsidian-resource-capture](GentlemanClaude/skills/obsidian-resource-capture/SKILL.md) |
 | `skill-registry` | Create or update skill registry for sub-agents | [GentlemanClaude/skills/skill-registry](GentlemanClaude/skills/skill-registry/SKILL.md) |
 
+### Skill Versions
+
+| Skill | Version | Upstream |
+|-------|---------|----------|
+| `adversarial-review` | 1.0 | agent-teams-lite v3.3.6 |
+| `agent-testing` | 1.0 | agent-teams-lite v3.3.6 |
+| `ai-sdk-5` | 1.0 | agent-teams-lite v3.3.6 |
+| `codebase-cartography` | 1.0 | agent-teams-lite v3.3.6 |
+| `cost-tracking` | 1.0 | agent-teams-lite v3.3.6 |
+| `django-drf` | 1.0 | agent-teams-lite v3.3.6 |
+| `embedding-strategies` | 1.0 | agent-teams-lite v3.3.6 |
+| `jira-epic` | 1.1 | agent-teams-lite v3.3.6 |
+| `jira-task` | 1.1 | agent-teams-lite v3.3.6 |
+| `llm-evaluation` | 1.0 | agent-teams-lite v3.3.6 |
+| `multi-round-synthesis` | 1.0 | agent-teams-lite v3.3.6 |
+| `nextjs-15` | 1.0 | agent-teams-lite v3.3.6 |
+| `obsidian-braindump` | 1.1 | Javi.Dots |
+| `obsidian-consolidation` | 1.3 | Javi.Dots |
+| `obsidian-resource-capture` | 1.1 | Javi.Dots |
+| `playbooks` | 1.0 | agent-teams-lite v3.3.6 |
+| `playwright` | 1.1 | agent-teams-lite v3.3.6 |
+| `pr-review` | 1.2 | agent-teams-lite v3.3.6 |
+| `prompt-engineering` | 1.0 | agent-teams-lite v3.3.6 |
+| `pytest` | 1.0 | agent-teams-lite v3.3.6 |
+| `rag-advanced` | 1.0 | agent-teams-lite v3.3.6 |
+| `react-19` | 1.0 | agent-teams-lite v3.3.6 |
+| `sdd-apply` | 2.1 | agent-teams-lite v3.3.6 + Javi.Dots |
+| `sdd-archive` | 2.0 | agent-teams-lite v3.3.6 |
+| `sdd-design` | 2.0 | agent-teams-lite v3.3.6 |
+| `sdd-explore` | 2.1 | agent-teams-lite v3.3.6 + Javi.Dots |
+| `sdd-init` | 2.0 | agent-teams-lite v3.3.6 |
+| `sdd-propose` | 2.0 | agent-teams-lite v3.3.6 |
+| `sdd-spec` | 2.0 | agent-teams-lite v3.3.6 |
+| `sdd-tasks` | 2.0 | agent-teams-lite v3.3.6 |
+| `sdd-verify` | 2.0 | agent-teams-lite v3.3.6 |
+| `session-memory` | 1.0 | agent-teams-lite v3.3.6 |
+| `skill-creator` | 1.0 | Javi.Dots |
+| `skill-registry` | 1.0 | agent-teams-lite v3.3.6 |
+| `tailwind-4` | 1.1 | agent-teams-lite v3.3.6 |
+| `typescript` | 1.0 | agent-teams-lite v3.3.6 |
+| `vector-index-tuning` | 1.0 | agent-teams-lite v3.3.6 |
+| `worktree-flow` | 1.0 | agent-teams-lite v3.3.6 |
+| `zod-4` | 1.0 | agent-teams-lite v3.3.6 |
+| `zustand-5` | 1.0 | agent-teams-lite v3.3.6 |
+
 ## Auto-invoke Skills
 
 When performing these actions, **ALWAYS** invoke the corresponding skill FIRST:
@@ -134,7 +179,13 @@ These rules apply to EVERY user request, not just SDD workflows.
 
 1. **NEVER do real work inline.** If a task involves reading code, writing code, analyzing architecture, designing solutions, running tests, or any implementation — delegate it to a sub-agent via Task.
 2. **You are allowed to:** answer short questions, coordinate sub-agents, show summaries, ask the user for decisions, and track state. That's it.
-3. **Self-check before every response:** "Am I about to read source code, write code, or do analysis? If yes → delegate."
+3. **Self-check before every response:**
+   - Am I about to read source code? → DELEGATE
+   - Am I about to write/edit code? → DELEGATE
+   - Am I about to analyze architecture? → DELEGATE
+   - Am I about to run tests/builds? → DELEGATE
+   - Am I about to write specs/proposals/designs? → DELEGATE
+   If none apply → safe to respond inline.
 4. **Why this matters:** You are always-loaded context. Every token you consume is context that survives for the ENTIRE conversation. If you do heavy work inline, you bloat the context, trigger compaction, and lose state. Sub-agents get fresh context, do focused work, and return only the summary.
 
 ### What you do NOT do (anti-patterns)
@@ -222,17 +273,41 @@ If `openspec/config.yaml` exists, check for an `explore` section:
 ```yaml
 explore:
   mode: standard  # standard | deep
-  perspectives:    # optional override (max 4)
+  perspectives:    # optional override (max 4) — accepts ANY string names
     - architecture
     - testing
     - risk
     - dx
+  rounds: 1        # iteration rounds (default: 1, max: 3)
 ```
 
 - If `explore.mode: deep` → activate multi-perspective (even without trigger keywords)
 - If `explore.perspectives` is defined → use those perspectives instead of defaults
+- Perspective names are NOT limited to the 4 defaults. Any non-empty string is valid (e.g., `performance`, `cost`, `compliance`, `security`). Unrecognized names are treated as custom perspectives and passed through to sub-agents without filtering.
 - If more than 4 perspectives are listed → use only the first 4, warn that remaining were skipped
 - If `explore` section is absent → defaults apply (standard mode, default perspectives if triggered)
+- `explore.rounds` controls how many fan-out → synthesis cycles execute (see Multi-Round Iteration below). Default: 1, max: 3. Values above 3 are capped with a warning.
+
+#### Multi-Round Iteration
+
+The orchestrator supports iterative exploration rounds to resolve conflicts and deepen analysis.
+
+- **Config**: `explore.rounds` (default: 1, max: 3). Values above 3 are capped with a warning.
+- **Round 1**: Normal fan-out → synthesis (current behavior).
+- **Round 2+**: The synthesis agent marks unresolved findings as `NEEDS FURTHER ANALYSIS`. The orchestrator re-launches ONLY the perspectives that had unresolved items, passing the prior round's synthesis as additional context. Each re-launched perspective agent is instructed to dig deeper on the specific unresolved conflicts and blind spots identified in that synthesis.
+- **Early convergence**: If the synthesis contains zero `NEEDS FURTHER ANALYSIS` items, stop immediately — do NOT execute remaining rounds.
+- **The orchestrator manages round tracking**, NOT the sub-agents. Sub-agents are unaware of which round they are in; they simply receive context and produce output.
+
+Round lifecycle:
+```
+for round in 1..rounds:
+  1. Fan out perspective sub-agents (round 1: all perspectives; round 2+: only unresolved)
+  2. Collect all perspective reports
+  3. Launch synthesis sub-agent (round 2+: include prior synthesis for continuity)
+  4. Check synthesis for "NEEDS FURTHER ANALYSIS" items
+  5. If zero items OR round == max_rounds → stop, use this synthesis as final
+  6. Otherwise → continue to next round
+```
 
 #### Fan-Out Dispatch
 
@@ -264,33 +339,105 @@ Task(
 
 ALL Task calls MUST be in a SINGLE message to ensure parallel execution.
 
+**Round 2+ Fan-Out**: For rounds after the first, only re-launch perspectives that had `NEEDS FURTHER ANALYSIS` items in the prior synthesis. Each agent receives the prior synthesis as additional context:
+
+```
+Task(
+  description: 'explore ({perspective_name}) round {N} for {change-name}',
+  prompt: 'You are an SDD explore sub-agent (follow-up round).
+  Read the skill file at ~/.claude/skills/sdd-explore/SKILL.md FIRST, then follow its instructions.
+
+  Perspective: {perspective_name}
+  Focus your ENTIRE exploration through the {perspective_name} lens.
+
+  PRIOR SYNTHESIS (from previous round):
+  {paste the prior round synthesis text}
+
+  UNRESOLVED ITEMS assigned to your perspective:
+  {list of NEEDS FURTHER ANALYSIS items relevant to this perspective}
+
+  Your job: dig deeper on these unresolved conflicts and blind spots. Provide concrete evidence
+  or analysis to resolve them. Do NOT repeat already-resolved findings.
+
+  CONTEXT:
+  - Project: {project path}
+  - Change: {change-name}
+  - Topic: {topic}
+  - Artifact store mode: {mode}
+
+  IMPORTANT: Do NOT persist exploration.md — the synthesis agent will produce the final artifact.
+  Return your exploration analysis in the structured format from Step 6 of the skill.
+
+  Return structured output with: status, executive_summary, perspective, artifacts, next_recommended, risks.'
+)
+```
+
 #### Synthesis Dispatch
 
 After ALL perspective agents return, launch ONE synthesis sub-agent:
 
 ```
 Task(
-  description: 'synthesis for {change-name} multi-perspective explore',
+  description: 'synthesis for {change-name} multi-perspective explore (round {N})',
   prompt: 'You are a synthesis agent. You have received N exploration reports, each from a different analytical perspective.
 
-  Combine them into ONE comprehensive exploration.md that:
+  Combine them into ONE comprehensive exploration.md that includes, IN THIS ORDER:
+
+  1. **### Agreement Matrix** (REQUIRED — place BEFORE the merged exploration body):
+
+  Produce a structured table showing cross-perspective alignment for each key finding:
+
+  ```markdown
+  ### Agreement Matrix
+  | Finding | Architecture | Testing | Risk | DX | Confidence |
+  |---------|:-----------:|:-------:|:----:|:--:|:----------:|
+  | Use pattern X | ✅ | ✅ | ⚠️ | ✅ | High |
+  | Approach Y | ✅ | ❌ | ✅ | ❌ | Low — needs resolution |
+  | Migration risk Z | — | — | ✅ | — | Single perspective — unvalidated |
+  ```
+
+  Column markers:
+  - ✅ = perspective agrees with the finding
+  - ❌ = perspective disagrees with the finding
+  - ⚠️ = partial or conditional agreement
+  - — = perspective did not analyze this finding
+
+  Confidence column values:
+  - **High**: all perspectives agree (all ✅)
+  - **Medium**: mostly agree (majority ✅, some ⚠️)
+  - **Low — needs resolution**: split opinions (mix of ✅ and ❌)
+  - **Single perspective — unvalidated**: only one perspective raised it
+
+  Adjust column headers to match the ACTUAL perspectives used (they may not be the 4 defaults).
+
+  2. **Merged exploration body**:
   - Merges overlapping findings (do not repeat)
-  - Highlights where perspectives AGREE (high confidence findings)
-  - Highlights where perspectives CONFLICT (needs resolution — explain which view you favor and why)
+  - For each CONFLICT: explain which view you favor and why
   - Identifies BLIND SPOTS — what no perspective covered
   - Preserves the standard exploration output format (Current State, Affected Areas, Approaches, Recommendation, Risks, Ready for Proposal)
   - Adds a ### Perspectives section summarizing what each perspective contributed
+
+  3. **NEEDS FURTHER ANALYSIS flagging**:
+  If any finding in the Agreement Matrix has Confidence "Low — needs resolution" AND there are
+  remaining rounds available (current round < max rounds), mark it explicitly as:
+  `**NEEDS FURTHER ANALYSIS**: {finding description} — perspectives {X} and {Y} disagree on {reason}`
+  Collect all such items in a ### Needs Further Analysis section at the end.
+  If there are NO items needing further analysis, omit this section entirely.
 
   CONTEXT:
   - Project: {project path}
   - Change: {change-name}
   - Artifact store mode: {mode}
+  - Current round: {N}
+  - Max rounds: {max_rounds}
 
   Perspective reports:
   {paste the executive_summary + detailed findings from each perspective agent}
 
+  {If round > 1: "PRIOR SYNTHESIS from round {N-1}:" followed by the previous synthesis text}
+
   Persist the merged exploration.md using the active artifact store mode.
-  Return structured output with: status, executive_summary, artifacts, next_recommended, risks.'
+  Return structured output with: status, executive_summary, artifacts, needs_further_analysis (list of unresolved items or empty), next_recommended, risks.'
 )
 ```
 
