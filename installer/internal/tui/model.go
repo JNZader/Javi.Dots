@@ -11,10 +11,10 @@ import (
 )
 
 // DefaultRepoDir is the default directory name for the cloned repository.
-const DefaultRepoDir = "Gentleman.Dots"
+const DefaultRepoDir = "Javi.Dots"
 
 // DefaultRepoURL is the default git URL for the dots repository.
-const DefaultRepoURL = "https://github.com/Gentleman-Programming/Gentleman.Dots.git"
+const DefaultRepoURL = "https://github.com/JNZader/Javi.Dots.git"
 
 // Screen represents the current screen being displayed
 type Screen int
