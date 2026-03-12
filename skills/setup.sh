@@ -14,6 +14,7 @@
 #   ./skills/setup.sh --codex      # Generate CODEX.md only
 #   ./skills/setup.sh --opencode   # Sync to OpenCode config
 #   ./skills/setup.sh --install-opencode-agents  # Install orchestrator agents
+#   ./skills/setup.sh --install-engram  # Install Engram MCP server
 #
 # ============================================================================
 
@@ -445,6 +446,58 @@ sync_hooks() {
     log_success "Synced hooks to ~/.claude/hooks/"
 }
 
+# Install Engram MCP server for persistent memory
+install_engram() {
+    log_header "Installing Engram (Persistent Memory)"
+
+    # Check if engram is already installed
+    if command -v engram &> /dev/null; then
+        log_info "Engram already installed: $(engram --version 2>/dev/null || echo 'version unknown')"
+        setup_engram_for_opencode
+        return 0
+    fi
+
+    # Install via Homebrew
+    if command -v brew &> /dev/null; then
+        log_info "Installing engram via Homebrew..."
+        if brew install gentleman-programming/tap/engram; then
+            log_success "Engram installed successfully"
+            setup_engram_for_opencode
+        else
+            log_error "Failed to install engram via Homebrew"
+            log_info "You can manually install from: https://github.com/Gentleman-Programming/engram"
+            return 1
+        fi
+    else
+        log_warning "Homebrew not found. Cannot install engram automatically."
+        log_info "Please install Homebrew first: https://brew.sh"
+        log_info "Or manually install engram from: https://github.com/Gentleman-Programming/engram"
+        return 1
+    fi
+}
+
+# Setup engram for OpenCode
+setup_engram_for_opencode() {
+    log_info "Setting up engram for OpenCode..."
+
+    if engram setup opencode; then
+        log_success "Engram configured for OpenCode"
+        log_info ""
+        log_info "Next steps:"
+        log_info "  1. Restart OpenCode to load the engram plugin"
+        log_info "  2. Run 'engram serve &' to start the HTTP server for session tracking"
+        log_info ""
+        log_info "Engram provides persistent memory across sessions:"
+        log_info "  • mem_save - Save observations"
+        log_info "  • mem_search - Search memories"
+        log_info "  • mem_context - Recover session context"
+        log_info "  • mem_session_summary - Summarize sessions"
+    else
+        log_warning "Failed to configure engram for OpenCode"
+        return 1
+    fi
+}
+
 # Generate all formats for a single AGENTS.md
 generate_all_for_file() {
     local agents_file="$1"
@@ -502,10 +555,11 @@ show_menu() {
     echo "  ${CYAN}12)${NC} Install Gemini orchestrator"
     echo "  ${CYAN}13)${NC} Install Codex orchestrator"
     echo "  ${CYAN}14)${NC} Install ALL orchestrators"
+    echo "  ${CYAN}15)${NC} Install Engram (persistent memory)"
     echo ""
     echo "  ${CYAN}0)${NC} Exit"
     echo ""
-    printf "Enter choice [0-14]: "
+    printf "Enter choice [0-15]: "
 }
 
 handle_menu_choice() {
@@ -562,6 +616,9 @@ handle_menu_choice() {
         14)
             install_all_orchestrators
             ;;
+        15)
+            install_engram
+            ;;
         0)
             log_info "Exiting..."
             exit 0
@@ -604,6 +661,7 @@ Options:
   --install-gemini-orchestrator   Install unified orchestrator for Gemini
   --install-codex-orchestrator    Install unified orchestrator for Codex
   --install-all-orchestrators     Install all orchestrators
+  --install-engram                Install Engram MCP server for persistent memory
   --help        Show this help message
 
 Examples:
@@ -613,6 +671,7 @@ Examples:
   ./skills/setup.sh --sync-all   # Sync to user configs
   ./skills/setup.sh --install-opencode-agents  # Install OpenCode agents
   ./skills/setup.sh --install-all-orchestrators  # Install all orchestrators
+  ./skills/setup.sh --install-engram  # Install Engram persistent memory
 EOF
 }
 
@@ -669,6 +728,9 @@ parse_args() {
             ;;
         --install-all-orchestrators)
             install_all_orchestrators
+            ;;
+        --install-engram)
+            install_engram
             ;;
         --help|-h)
             show_help
