@@ -60,27 +60,39 @@ brew install JNZader/tap/javi-dots
 javi-dots
 ```
 
-### Option 2: Direct Download
+### Option 2: Direct Download (Linux)
 
 ```bash
-# macOS Apple Silicon
-curl -fsSL https://github.com/JNZader/Javi.Dots/releases/latest/download/gentleman-installer-darwin-arm64 -o gentleman.dots
-
-# macOS Intel
-curl -fsSL https://github.com/JNZader/Javi.Dots/releases/latest/download/gentleman-installer-darwin-amd64 -o gentleman.dots
-
-# Linux x86_64
+# Linux x86_64 (AMD64)
 curl -fsSL https://github.com/JNZader/Javi.Dots/releases/latest/download/gentleman-installer-linux-amd64 -o gentleman.dots
-
-# Linux ARM64 (Raspberry Pi, etc.)
-curl -fsSL https://github.com/JNZader/Javi.Dots/releases/latest/download/gentleman-installer-linux-arm64 -o gentleman.dots
-
-# Then run
 chmod +x gentleman.dots
 ./gentleman.dots
 ```
 
-### Option 3: Termux (Android)
+### Option 3: Windows (via WSL)
+
+Javi.Dots runs on Windows through **WSL2 (Windows Subsystem for Linux)**:
+
+1. **Install WSL2 + Ubuntu** (if not already installed):
+   ```powershell
+   # In PowerShell as Administrator
+   wsl --install -d Ubuntu
+   # Restart your computer, then open Ubuntu from Start Menu
+   ```
+
+2. **Run Javi.Dots installer inside WSL**:
+   ```bash
+   # Inside Ubuntu WSL terminal
+   curl -fsSL https://github.com/JNZader/Javi.Dots/releases/latest/download/gentleman-installer-linux-amd64 -o gentleman.dots
+   chmod +x gentleman.dots
+   ./gentleman.dots
+   ```
+
+3. **Use your Windows terminal** (Windows Terminal, WezTerm, etc.) to connect to WSL
+
+> 💡 **Why WSL?** All tools (Neovim, AI assistants, dotfiles) work perfectly in WSL. You get the best of both worlds: Linux dev environment + Windows desktop.
+
+### Option 4: Termux (Android)
 
 Termux requires building the installer locally (Go cross-compilation to Android has limitations).
 
@@ -118,15 +130,13 @@ The TUI guides you through selecting your preferred tools and handles all the co
 
 ## Supported Platforms
 
-| Platform | Architecture | Install Method | Package Manager |
-|----------|--------------|----------------|-----------------|
-| macOS | Apple Silicon (ARM64) | Homebrew, Direct Download | Homebrew |
-| macOS | Intel (x86_64) | Homebrew, Direct Download | Homebrew |
-| Linux (Ubuntu/Debian) | x86_64, ARM64 | Homebrew, Direct Download | Homebrew |
-| Linux (Fedora/RHEL) | x86_64, ARM64 | Direct Download | dnf |
-| Linux (Arch) | x86_64 | Homebrew, Direct Download | Homebrew |
-| Windows | WSL | Direct Download (see docs) | Homebrew |
-| Android | Termux (ARM64) | Build locally (see above) | pkg |
+| Platform | Architecture | Install Method | Notes |
+|----------|--------------|----------------|-------|
+| **Linux** (Ubuntu/Debian/Fedora/Arch) | x86_64 (AMD64) | Homebrew, Direct Download | Native support |
+| **Windows** | x86_64 | WSL2 + Ubuntu | Run installer inside WSL |
+| **macOS** | Any | Not officially supported | Use at your own risk (may work via Homebrew) |
+
+> ⚠️ **Note**: Only **Linux x86_64** is officially supported. Windows users should use WSL2. macOS and other platforms are not tested but may work via Homebrew.
 
 ---
 
