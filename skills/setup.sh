@@ -13,6 +13,7 @@
 #   ./skills/setup.sh --copilot    # Generate .github/copilot-instructions.md
 #   ./skills/setup.sh --codex      # Generate CODEX.md only
 #   ./skills/setup.sh --opencode   # Sync to OpenCode config
+#   ./skills/setup.sh --install-opencode-agents  # Install orchestrator agents
 #
 # ============================================================================
 
@@ -196,6 +197,65 @@ sync_opencode() {
     fi
 }
 
+# Install orchestrator agents to OpenCode
+install_opencode_agents() {
+    local agents_dir="$HOME/.config/opencode/agents"
+    local specialists_dir="$HOME/.config/opencode/specialists"
+    local repo_agents_dir="$REPO_ROOT/opencode-agents"
+
+    log_header "Installing OpenCode Orchestrator Agents"
+
+    # Create directories
+    mkdir -p "$agents_dir"
+    mkdir -p "$specialists_dir"/{development,infrastructure,quality,data-ai,business,domains,planner,docs}
+
+    # Backup existing agents if any
+    if [ -f "$agents_dir/gentleman.md" ] || [ -f "$agents_dir/master-orchestrator.md" ]; then
+        local backup_dir="$agents_dir/backup-$(date +%Y%m%d-%H%M%S)"
+        mkdir -p "$backup_dir"
+        # Backup old agent files (not our orchestrators)
+        find "$agents_dir" -maxdepth 1 -name "*.md" -not -name "gentleman.md" \
+            -not -name "*orchestrator.md" -exec cp {} "$backup_dir/" \; 2>/dev/null || true
+        log_info "Backed up existing agents to $backup_dir"
+    fi
+
+    # Copy orchestrator agents from repo
+    if [ -d "$repo_agents_dir" ]; then
+        log_info "Installing orchestrator agents..."
+        for agent_file in "$repo_agents_dir"/*.md; do
+            if [ -f "$agent_file" ]; then
+                cp "$agent_file" "$agents_dir/"
+                log_info "  → Installed $(basename "$agent_file")"
+            fi
+        done
+        log_success "Installed 12 orchestrator agents"
+    else
+        log_warning "Agent templates not found: $repo_agents_dir"
+        log_info "Run from repo root with ./skills/setup.sh"
+    fi
+
+    # Note about specialists
+    log_info ""
+    log_info "Specialist agents are stored in: $specialists_dir"
+    log_info "These are hidden from OpenCode UI and accessed via orchestrators"
+    log_info ""
+    log_success "OpenCode agent setup complete!"
+    log_info ""
+    log_info "Available orchestrators in OpenCode:"
+    log_info "  • gentleman - Javi.Dots expert"
+    log_info "  • sdd-orchestrator - SDD workflow"
+    log_info "  • master-orchestrator - Delegates to specialized orchestrators"
+    log_info "  • architect-orchestrator - System design"
+    log_info "  • frontend-orchestrator - React, Vue, Angular"
+    log_info "  • backend-orchestrator - Python, Go, Java, Node"
+    log_info "  • devops-orchestrator - Docker, K8s, CI/CD"
+    log_info "  • data-ai-orchestrator - ML, AI, Data"
+    log_info "  • quality-orchestrator - Testing, Security"
+    log_info "  • business-orchestrator - PM, Analysis"
+    log_info "  • specialized-orchestrator - Blockchain, Games"
+    log_info "  • planner-orchestrator - Project planning"
+}
+
 # Sync skills to Claude Code config directory
 sync_claude_config() {
     local claude_dir="$HOME/.claude/skills"
@@ -329,10 +389,11 @@ show_menu() {
     echo "  ${CYAN}7)${NC} Sync to OpenCode config"
     echo "  ${CYAN}8)${NC} Sync to all user configs"
     echo "  ${CYAN}9)${NC} Sync hooks to ~/.claude/hooks/"
+    echo "  ${CYAN}10)${NC} Install OpenCode orchestrator agents"
     echo ""
     echo "  ${CYAN}0)${NC} Exit"
     echo ""
-    printf "Enter choice [0-9]: "
+    printf "Enter choice [0-10]: "
 }
 
 handle_menu_choice() {
@@ -374,6 +435,9 @@ handle_menu_choice() {
         9)
             sync_hooks
             ;;
+        10)
+            install_opencode_agents
+            ;;
         0)
             log_info "Exiting..."
             exit 0
@@ -411,6 +475,7 @@ Options:
   --sync-opencode Sync skills to OpenCode config
   --sync-hooks  Sync hooks to ~/.claude/hooks/
   --sync-all    Sync skills + hooks to all user config directories
+  --install-opencode-agents  Install orchestrator agents to OpenCode
   --help        Show this help message
 
 Examples:
@@ -418,6 +483,7 @@ Examples:
   ./skills/setup.sh --all        # Generate all formats
   ./skills/setup.sh --claude     # Claude Code only
   ./skills/setup.sh --sync-all   # Sync to user configs
+  ./skills/setup.sh --install-opencode-agents  # Install OpenCode agents
 EOF
 }
 
@@ -459,6 +525,9 @@ parse_args() {
             sync_claude_config
             sync_opencode
             sync_hooks
+            ;;
+        --install-opencode-agents)
+            install_opencode_agents
             ;;
         --help|-h)
             show_help
