@@ -1274,16 +1274,20 @@ func stepInstallAITools(m *Model) error {
 		SendLog(stepID, "🧠 Copied QWEN.md and settings config to ~/.qwen/")
 	}
 
-	// Install GitHub Copilot CLI extension
+	// Install GitHub Copilot CLI (new standalone version)
 	if hasAITool(m.Choices.AITools, "copilot") {
 		SendLog(stepID, "Installing GitHub Copilot CLI...")
-		result := system.RunWithLogs(`gh extension install github/gh-copilot`, nil, func(line string) {
+		result := system.RunWithLogs(`curl -fsSL https://gh.io/copilot-install | bash`, nil, func(line string) {
 			SendLog(stepID, line)
 		})
 		if result.Error != nil {
-			SendLog(stepID, "⚠️ Could not install GitHub Copilot (run 'gh extension install github/gh-copilot' manually)")
+			SendLog(stepID, "⚠️ Could not install GitHub Copilot (run 'curl -fsSL https://gh.io/copilot-install | bash' manually)")
 		} else {
 			SendLog(stepID, "✓ GitHub Copilot CLI installed")
+			// Ensure ~/.local/bin is in PATH (copilot installs here)
+			if err := ensureLocalBinInPATH(homeDir, m.SystemInfo.UserShell); err != nil {
+				SendLog(stepID, fmt.Sprintf("⚠️ Could not update PATH for copilot: %v", err))
+			}
 		}
 	}
 
