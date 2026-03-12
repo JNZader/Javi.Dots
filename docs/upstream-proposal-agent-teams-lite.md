@@ -71,14 +71,12 @@ flowchart TD
 
 **Key innovation -- Agreement Matrix.** The synthesis agent produces a structured table showing where perspectives agree and disagree. This is the most valuable output of multi-perspective explore: instead of a single "recommended approach" that hides uncertainty, you get a visual map of confidence levels across findings. The user can immediately see which decisions are safe (all perspectives agree) and which need discussion (perspectives conflict):
 
-```markdown
 ### Agreement Matrix
 | Finding | Architecture | Testing | Risk | DX | Confidence |
 |---------|:-----------:|:-------:|:----:|:--:|:----------:|
 | Use pattern X | Y | Y | ! | Y | High |
 | Approach Y | Y | N | Y | N | Low -- needs resolution |
 | Migration risk Z | - | - | Y | - | Single perspective -- unvalidated |
-```
 
 Column markers: Y = agrees, N = disagrees, ! = partial/conditional, - = did not analyze. These simplified markers are intentional — they render cleanly in any markdown viewer and are unambiguous at a glance.
 
@@ -251,7 +249,6 @@ flowchart LR
 
 **Solution.** Make delegation rules unconditionally active with an explicit scope declaration:
 
-```markdown
 ### Delegation Rules (ALWAYS ACTIVE)
 
 These rules apply to EVERY user request, not just SDD workflows.
@@ -261,7 +258,6 @@ These rules apply to EVERY user request, not just SDD workflows.
    to a sub-agent via Task.
 2. **You are allowed to:** answer short questions, coordinate sub-agents, show
    summaries, ask the user for decisions, and track state. That is it.
-```
 
 **Rationale** (included in the prompt text for self-reinforcement — the orchestrator reads this about itself, which reinforces the behavior):
 
@@ -293,11 +289,9 @@ Both outcomes are silent failures — the user gets a polite refusal or a timeou
 
 **Solution.** Add an explicit clarification block immediately after the Orchestrator Rules section. Placement matters — it must appear right after the restriction rules so the LLM processes it as a direct qualifier:
 
-```markdown
 > **Note:** These rules define what the ORCHESTRATOR does. Sub-agents are NOT
 > bound by these -- they are full-capability agents that read code, write code,
 > run tests, and use ANY of the user's installed skills.
-```
 
 **Tiny diff, critical impact.** This is a single paragraph addition, but it eliminates the most common source of sub-agent failure in practice. The explicit "Sub-agents are NOT bound by these" creates an unambiguous scope boundary that the LLM consistently respects.
 
@@ -313,7 +307,6 @@ The failure mode is always the same: the orchestrator encounters a task that fee
 
 **Solution.** Replace prose guidance with a concrete, binary checklist that the orchestrator evaluates before every response. The checklist format is deliberate — LLMs are much more consistent at following explicit yes/no decision trees than interpreting qualitative guidance like "heavy work":
 
-```markdown
 3. **Self-check before every response:**
    - Am I about to read source code? -> DELEGATE
    - Am I about to write/edit code? -> DELEGATE
@@ -321,7 +314,6 @@ The failure mode is always the same: the orchestrator encounters a task that fee
    - Am I about to run tests/builds? -> DELEGATE
    - Am I about to write specs/proposals/designs? -> DELEGATE
    If none apply -> safe to respond inline.
-```
 
 The binary yes/no format eliminates ambiguity. There is no "just a quick look" escape hatch. Each check is deliberately broad — "Am I about to read source code?" covers everything from reading one function to scanning an entire module. This is intentional: the cost of one unnecessary delegation is a few seconds; the cost of one unnecessary inline read is permanent context bloat.
 
@@ -389,7 +381,6 @@ This causes real confusion in multi-project setups. Consider a user working on t
 
 **Solution.** Add a `### Skill Versions` table to the orchestrator config or AGENTS.md. This provides a single-glance view of the skill inventory — what's installed, what version, and whether it's been modified from upstream:
 
-```markdown
 ### Skill Versions
 
 | Skill | Version | Upstream |
@@ -399,7 +390,6 @@ This causes real confusion in multi-project setups. Consider a user working on t
 | sdd-apply | 2.1 | agent-teams-lite v3.3.6 + custom |
 | react-19 | 1.0 | agent-teams-lite v3.3.6 |
 | adversarial-review | 1.0 | agent-teams-lite v3.3.6 |
-```
 
 The `Upstream` column is the key differentiator — it tells you at a glance whether a skill is stock ATL or has been customized. Skills marked `+ custom` have local modifications that need manual review during upgrades.
 
@@ -427,13 +417,11 @@ This matters because many users invest significant effort in tuning their agent'
 
 **Solution.** Add an `### Identity Inheritance` section to the orchestrator prompt. The key insight is framing SDD as an "overlay" rather than a mode switch — the orchestrator gains new capabilities (delegation, state tracking) without replacing its existing personality:
 
-```markdown
 ### Identity Inheritance
 - Keep the SAME identity, tone, and teaching style defined elsewhere
   in your prompt file.
 - Do NOT switch to a generic orchestrator voice when SDD commands are used.
 - Apply SDD rules as an overlay, not a personality replacement.
-```
 
 **Needs generalization.** The Javi.Dots implementation references project-specific mentoring behavior (e.g., "keep coaching behavior: explain the WHY, validate assumptions"). The upstream version should use generic language that works for ANY identity the user has defined — mentor, pair programmer, concise expert, or anything else.
 
@@ -521,7 +509,6 @@ In a polyglot project, this is a constant source of rework. The user spends 20 m
 
 **Solution.** Document a pattern where file path globs map to coding conventions. The AI reads the applicable conventions before editing a file matching a given pattern, ensuring consistent style regardless of conversation history:
 
-```markdown
 ### Convention Rules
 
 | Path Pattern | Conventions |
@@ -530,7 +517,6 @@ In a polyglot project, this is a constant source of rework. The user spends 20 m
 | `**/*.ts` | Strict mode, no `any`, explicit return types |
 | `**/*.go` | gofmt, error wrapping with `%w`, table-driven tests |
 | `**/test_*.py` | pytest fixtures, no mocking stdlib |
-```
 
 The path pattern acts as a context switch signal. When the agent opens `handlers/auth.go`, it checks the convention table, finds the `**/*.go` rule, and applies Go-specific conventions (gofmt formatting, error wrapping with `%w`, table-driven tests) regardless of whether the previous file was TypeScript or Python. This replaces implicit convention inference (which is unreliable) with explicit convention declaration (which is deterministic).
 
