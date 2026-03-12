@@ -56,8 +56,8 @@ A complete development environment configuration including:
 ### Option 1: Homebrew (Recommended)
 
 ```bash
-brew install Gentleman-Programming/tap/gentleman-dots
-gentleman-dots
+brew install JNZader/tap/javi-dots
+javi-dots
 ```
 
 ### Option 2: Direct Download
@@ -209,10 +209,10 @@ Bootstrap any project with AI framework support:
 
 ```bash
 # Interactive
-gentleman-dots  # → Main Menu → Initialize Project
+javi-dots  # → Main Menu → Initialize Project
 
 # Non-interactive
-gentleman-dots --non-interactive --init-project \
+javi-dots --non-interactive --init-project \
   --project-path=/path/to/project \
   --project-memory=obsidian-brain \
   --project-ci=github --project-engram
@@ -229,11 +229,11 @@ Browse, install, and remove AI agent skills from the Gentleman-Skills catalog:
 
 ```bash
 # Interactive
-gentleman-dots  # → Main Menu → Skill Manager
+javi-dots  # → Main Menu → Skill Manager
 
 # Non-interactive
-gentleman-dots --non-interactive --skill-install=react-19,typescript,tailwind-4
-gentleman-dots --non-interactive --skill-remove=react-19
+javi-dots --non-interactive --skill-install=react-19,typescript,tailwind-4
+javi-dots --non-interactive --skill-remove=react-19
 ```
 
 Skills are organized by category (curated, community, plugin) and symlinked to `~/.claude/skills/`.
@@ -246,10 +246,10 @@ Override the clone URL and directory to point to your own fork:
 
 ```bash
 # Via environment variables
-REPO_URL=https://github.com/YourUser/YourFork.git REPO_DIR=YourFork gentleman-dots
+REPO_URL=https://github.com/YourUser/YourFork.git REPO_DIR=YourFork javi-dots
 
 # Via CLI flags
-gentleman-dots --repo-url=https://github.com/YourUser/YourFork.git --repo-dir=YourFork
+javi-dots --repo-url=https://github.com/YourUser/YourFork.git --repo-dir=YourFork
 ```
 
 ---

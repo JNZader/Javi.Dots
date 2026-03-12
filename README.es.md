@@ -61,8 +61,8 @@ Una configuración completa de entorno de desarrollo que incluye:
 ### Opción 1: Homebrew (Recomendado)
 
 ```bash
-brew install Gentleman-Programming/tap/gentleman-dots
-gentleman-dots
+brew install JNZader/tap/javi-dots
+javi-dots
 ```
 
 ### Opción 2: Descarga directa
@@ -214,10 +214,10 @@ Bootstrapeá cualquier proyecto con soporte de framework IA:
 
 ```bash
 # Interactivo
-gentleman-dots  # → Menú Principal → Initialize Project
+javi-dots  # → Menú Principal → Initialize Project
 
 # No interactivo
-gentleman-dots --non-interactive --init-project \
+javi-dots --non-interactive --init-project \
   --project-path=/ruta/al/proyecto \
   --project-memory=obsidian-brain \
   --project-ci=github --project-engram
@@ -234,11 +234,11 @@ Navegá, instalá y eliminá skills de agentes IA del catálogo Gentleman-Skills
 
 ```bash
 # Interactivo
-gentleman-dots  # → Menú Principal → Skill Manager
+javi-dots  # → Menú Principal → Skill Manager
 
 # No interactivo
-gentleman-dots --non-interactive --skill-install=react-19,typescript,tailwind-4
-gentleman-dots --non-interactive --skill-remove=react-19
+javi-dots --non-interactive --skill-install=react-19,typescript,tailwind-4
+javi-dots --non-interactive --skill-remove=react-19
 ```
 
 Los skills se organizan por categoría (curated, community, plugin) y se enlazan a `~/.claude/skills/`.
@@ -251,10 +251,10 @@ Sobrescribí la URL de clone y el directorio para apuntar a tu propio fork:
 
 ```bash
 # Vía variables de entorno
-REPO_URL=https://github.com/TuUsuario/TuFork.git REPO_DIR=TuFork gentleman-dots
+REPO_URL=https://github.com/TuUsuario/TuFork.git REPO_DIR=TuFork javi-dots
 
 # Vía flags CLI
-gentleman-dots --repo-url=https://github.com/TuUsuario/TuFork.git --repo-dir=TuFork
+javi-dots --repo-url=https://github.com/TuUsuario/TuFork.git --repo-dir=TuFork
 ```
 
 ---
