@@ -1191,6 +1191,14 @@ func stepInstallAITools(m *Model) error {
 		} else {
 			SendLog(stepID, "⚠️ Could not apply tweakcc theme (run 'npx tweakcc --apply' manually)")
 		}
+
+		// Ensure ~/.local/bin is in PATH
+		SendLog(stepID, "Ensuring ~/.local/bin is in PATH...")
+		if err := ensureLocalBinInPATH(homeDir, m.SystemInfo.UserShell); err != nil {
+			SendLog(stepID, fmt.Sprintf("⚠️ Could not update PATH: %v", err))
+		} else {
+			SendLog(stepID, "✓ PATH updated for ~/.local/bin")
+		}
 	}
 
 	// Install and configure OpenCode
@@ -2146,6 +2154,58 @@ func copyRolePackTemplates(repoDir, projectPath string, rolePacks []string) erro
 				return fmt.Errorf("failed to write template %s: %w", dst, err)
 			}
 		}
+	}
+
+	return nil
+}
+
+// ensureLocalBinInPATH ensures ~/.local/bin is in the user's PATH
+// by adding it to the appropriate shell rc file
+func ensureLocalBinInPATH(homeDir, shell string) error {
+	localBinPath := filepath.Join(homeDir, ".local/bin")
+
+	// Determine which rc file to use based on shell
+	var rcFile string
+	switch shell {
+	case "zsh":
+		rcFile = filepath.Join(homeDir, ".zshrc")
+	case "fish":
+		rcFile = filepath.Join(homeDir, ".config/fish/config.fish")
+	case "nu", "nushell":
+		// Nushell uses env.nu or config.nu
+		rcFile = filepath.Join(homeDir, ".config/nushell/env.nu")
+	default:
+		rcFile = filepath.Join(homeDir, ".bashrc")
+	}
+
+	// Check if already in PATH
+	if _, err := os.Stat(rcFile); err == nil {
+		content, err := os.ReadFile(rcFile)
+		if err == nil && strings.Contains(string(content), ".local/bin") {
+			return nil // Already configured
+		}
+	}
+
+	// Add to PATH based on shell
+	var exportLine string
+	switch shell {
+	case "fish":
+		exportLine = fmt.Sprintf("\n# Added by Javi.Dots installer\nfish_add_path %s\n", localBinPath)
+	case "nu", "nushell":
+		exportLine = fmt.Sprintf("\n# Added by Javi.Dots installer\n$env.PATH = ($env.PATH | prepend \"%s\")\n", localBinPath)
+	default:
+		exportLine = fmt.Sprintf("\n# Added by Javi.Dots installer\nexport PATH=\"%s:$PATH\"\n", localBinPath)
+	}
+
+	// Append to rc file
+	f, err := os.OpenFile(rcFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return fmt.Errorf("failed to open %s: %w", rcFile, err)
+	}
+	defer f.Close()
+
+	if _, err := f.WriteString(exportLine); err != nil {
+		return fmt.Errorf("failed to write to %s: %w", rcFile, err)
 	}
 
 	return nil
