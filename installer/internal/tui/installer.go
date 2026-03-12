@@ -1212,11 +1212,28 @@ func stepInstallAITools(m *Model) error {
 		openCodeDir := filepath.Join(homeDir, ".config/opencode")
 		system.EnsureDir(openCodeDir)
 		system.EnsureDir(filepath.Join(openCodeDir, "themes"))
-		system.EnsureDir(filepath.Join(openCodeDir, "agents"))
+
+		// Clean agents directory first to avoid duplicates from previous installs
+		agentsDir := filepath.Join(openCodeDir, "agents")
+		os.RemoveAll(agentsDir)
+		system.EnsureDir(agentsDir)
+
+		// Copy only orchestrators from Javi.Dots (not individual agents from other sources)
+		srcAgentsDir := filepath.Join(repoDir, "GentlemanOpenCode/agents")
+		entries, err := os.ReadDir(srcAgentsDir)
+		if err == nil {
+			for _, entry := range entries {
+				if !entry.IsDir() && strings.HasSuffix(entry.Name(), ".md") {
+					src := filepath.Join(srcAgentsDir, entry.Name())
+					dst := filepath.Join(agentsDir, entry.Name())
+					system.CopyFile(src, dst)
+				}
+			}
+		}
+
 		system.CopyFile(filepath.Join(repoDir, "GentlemanOpenCode/opencode.json"), filepath.Join(openCodeDir, "opencode.json"))
 		system.CopyFile(filepath.Join(repoDir, "GentlemanOpenCode/themes/gentleman.json"), filepath.Join(openCodeDir, "themes/gentleman.json"))
-		system.CopyDir(filepath.Join(repoDir, "GentlemanOpenCode/agents"), filepath.Join(openCodeDir, "agents"))
-		SendLog(stepID, "🧠 Copied OpenCode config and agents")
+		SendLog(stepID, "🧠 Copied OpenCode config and 6 orchestrators")
 	}
 
 	// Install Gemini CLI
