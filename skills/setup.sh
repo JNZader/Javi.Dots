@@ -450,11 +450,41 @@ sync_hooks() {
 install_engram() {
     log_header "Installing Engram (Persistent Memory)"
 
+    local force_reinstall=false
+
+    # Check for --force flag
+    if [ "$1" == "--force" ]; then
+        force_reinstall=true
+        log_info "Force reinstall requested"
+    fi
+
     # Check if engram is already installed
-    if command -v engram &> /dev/null; then
-        log_info "Engram already installed: $(engram --version 2>/dev/null || echo 'version unknown')"
-        setup_engram_for_opencode
-        return 0
+    if command -v engram &> /dev/null && [ "$force_reinstall" = false ]; then
+        local version=$(engram --version 2>/dev/null || echo 'unknown')
+        log_info "Engram already installed: $version"
+
+        # Check if already configured for OpenCode
+        if [ -f "$HOME/.config/opencode/plugins/engram.ts" ] && \
+           grep -q '"engram"' "$HOME/.config/opencode/opencode.json" 2>/dev/null; then
+            log_success "Engram is already installed and configured for OpenCode"
+            log_info ""
+            log_info "To reinstall with latest version, run:"
+            log_info "  ./skills/setup.sh --install-engram --force"
+            log_info ""
+            log_info "Or manually upgrade:"
+            log_info "  brew update && brew upgrade engram"
+            return 0
+        else
+            log_info "Engram installed but not fully configured for OpenCode"
+            setup_engram_for_opencode
+            return 0
+        fi
+    fi
+
+    # If force reinstall, uninstall first
+    if [ "$force_reinstall" = true ] && command -v engram &> /dev/null; then
+        log_info "Uninstalling existing engram..."
+        brew uninstall engram 2>/dev/null || true
     fi
 
     # Install via Homebrew
@@ -479,6 +509,11 @@ install_engram() {
 # Setup engram for OpenCode
 setup_engram_for_opencode() {
     log_info "Setting up engram for OpenCode..."
+
+    # Check if already configured
+    if [ -f "$HOME/.config/opencode/plugins/engram.ts" ]; then
+        log_info "OpenCode plugin already exists, updating..."
+    fi
 
     if engram setup opencode; then
         log_success "Engram configured for OpenCode"
@@ -661,7 +696,7 @@ Options:
   --install-gemini-orchestrator   Install unified orchestrator for Gemini
   --install-codex-orchestrator    Install unified orchestrator for Codex
   --install-all-orchestrators     Install all orchestrators
-  --install-engram                Install Engram MCP server for persistent memory
+  --install-engram [ --force ]    Install Engram MCP server (use --force to reinstall)
   --help        Show this help message
 
 Examples:
@@ -671,7 +706,8 @@ Examples:
   ./skills/setup.sh --sync-all   # Sync to user configs
   ./skills/setup.sh --install-opencode-agents  # Install OpenCode agents
   ./skills/setup.sh --install-all-orchestrators  # Install all orchestrators
-  ./skills/setup.sh --install-engram  # Install Engram persistent memory
+  ./skills/setup.sh --install-engram  # Install Engram (skips if already installed)
+  ./skills/setup.sh --install-engram --force  # Force reinstall Engram
 EOF
 }
 
@@ -730,7 +766,12 @@ parse_args() {
             install_all_orchestrators
             ;;
         --install-engram)
-            install_engram
+            # Check if --force is the next argument
+            if [ "$2" == "--force" ]; then
+                install_engram --force
+            else
+                install_engram
+            fi
             ;;
         --help|-h)
             show_help
