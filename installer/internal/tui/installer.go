@@ -73,6 +73,8 @@ func executeStep(stepID string, m *Model) error {
 		return stepInstallAITools(m)
 	case "aiframework":
 		return stepInstallAIFramework(m)
+	case "engram":
+		return stepInstallEngram(m)
 	case "cleanup":
 		return stepCleanup(m)
 	case "setshell":
@@ -1493,6 +1495,228 @@ func stepInstallAIFramework(m *Model) error {
 	}
 
 	return nil
+}
+
+// stepInstallEngram installs Engram MCP server and configures auto-start service
+func stepInstallEngram(m *Model) error {
+	stepID := "engram"
+	homeDir := os.Getenv("HOME")
+
+	// Check if engram is already installed
+	engramPath, err := exec.LookPath("engram")
+	if err == nil {
+		SendLog(stepID, fmt.Sprintf("Engram already installed at: %s", engramPath))
+		SendLog(stepID, "Checking configuration...")
+
+		// Check if configured for OpenCode
+		opencodePluginPath := filepath.Join(homeDir, ".config/opencode/plugins/engram.ts")
+		if _, err := os.Stat(opencodePluginPath); err == nil {
+			SendLog(stepID, "✓ Engram already configured for OpenCode")
+
+			// Check if service is configured
+			if setupEngramService(m) {
+				SendLog(stepID, "✓ Engram service configured")
+			}
+
+			return nil
+		}
+	}
+
+	// Install engram via Homebrew
+	SendLog(stepID, "Installing Engram via Homebrew...")
+	result := system.RunWithLogs("brew install gentleman-programming/tap/engram", nil, func(line string) {
+		SendLog(stepID, line)
+	})
+	if result.Error != nil {
+		SendLog(stepID, "⚠️ Could not install Engram via Homebrew")
+		SendLog(stepID, "You can manually install from: https://github.com/Gentleman-Programming/engram")
+		return nil // Don't fail the entire installation
+	}
+
+	SendLog(stepID, "✓ Engram installed")
+
+	// Configure for OpenCode
+	SendLog(stepID, "Configuring Engram for OpenCode...")
+	result = system.RunWithLogs("engram setup opencode", nil, func(line string) {
+		SendLog(stepID, line)
+	})
+	if result.Error != nil {
+		SendLog(stepID, fmt.Sprintf("⚠️ Could not configure Engram: %v", result.Error))
+	} else {
+		SendLog(stepID, "✓ Engram configured for OpenCode")
+	}
+
+	// Setup auto-start service
+	if setupEngramService(m) {
+		SendLog(stepID, "✓ Engram service configured for auto-start")
+	}
+
+	SendLog(stepID, "✓ Engram installation complete")
+	SendLog(stepID, "Engram provides persistent memory: mem_save, mem_search, mem_context")
+
+	return nil
+}
+
+// setupEngramService configures systemd (Linux) or launchd (macOS) for engram
+func setupEngramService(m *Model) bool {
+	stepID := "engram"
+	homeDir := os.Getenv("HOME")
+
+	switch runtime.GOOS {
+	case "linux":
+		return setupEngramSystemd(homeDir, stepID)
+	case "darwin":
+		return setupEngramLaunchd(homeDir, stepID)
+	default:
+		SendLog(stepID, "⚠️ Auto-start service not supported on this OS")
+		return false
+	}
+}
+
+// setupEngramSystemd creates systemd user service for Linux
+func setupEngramSystemd(homeDir, stepID string) bool {
+	configDir := filepath.Join(homeDir, ".config/systemd/user")
+	serviceFile := filepath.Join(configDir, "engram.service")
+
+	// Ensure directory exists
+	if err := os.MkdirAll(configDir, 0755); err != nil {
+		SendLog(stepID, fmt.Sprintf("⚠️ Could not create systemd directory: %v", err))
+		return false
+	}
+
+	// Create service file
+	serviceContent := `[Unit]
+Description=Engram Persistent Memory Server
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=%s/.local/bin/engram serve
+Restart=always
+RestartSec=10
+Environment="HOME=%s"
+Environment="ENGRAM_DATA_DIR=%s/.engram"
+
+[Install]
+WantedBy=default.target
+`
+
+	// Find engram binary location
+	engramPath := filepath.Join(homeDir, ".local/bin/engram")
+	if _, err := os.Stat(engramPath); os.IsNotExist(err) {
+		// Try to find in PATH
+		if path, err := exec.LookPath("engram"); err == nil {
+			engramPath = path
+		}
+	}
+
+	content := fmt.Sprintf(serviceContent, homeDir, homeDir, homeDir)
+
+	if err := os.WriteFile(serviceFile, []byte(content), 0644); err != nil {
+		SendLog(stepID, fmt.Sprintf("⚠️ Could not create systemd service: %v", err))
+		return false
+	}
+
+	// Enable and start service
+	result := system.Run("systemctl --user daemon-reload", nil)
+	if result.Error != nil {
+		SendLog(stepID, fmt.Sprintf("⚠️ Could not reload systemd: %v", result.Error))
+		return false
+	}
+
+	result = system.Run("systemctl --user enable engram.service", nil)
+	if result.Error != nil {
+		SendLog(stepID, fmt.Sprintf("⚠️ Could not enable engram service: %v", result.Error))
+		return false
+	}
+
+	// Try to start, but don't fail if it doesn't (might need logout/login)
+	result = system.Run("systemctl --user start engram.service", nil)
+	if result.Error != nil {
+		SendLog(stepID, "Note: Engram service enabled but not started (will start on next login)")
+	} else {
+		SendLog(stepID, "✓ Engram service started")
+	}
+
+	return true
+}
+
+// setupEngramLaunchd creates launchd plist for macOS
+func setupEngramLaunchd(homeDir, stepID string) bool {
+	launchAgentsDir := filepath.Join(homeDir, "Library/LaunchAgents")
+	plistFile := filepath.Join(launchAgentsDir, "com.gentleman.engram.plist")
+
+	// Ensure directory exists
+	if err := os.MkdirAll(launchAgentsDir, 0755); err != nil {
+		SendLog(stepID, fmt.Sprintf("⚠️ Could not create LaunchAgents directory: %v", err))
+		return false
+	}
+
+	// Find engram binary
+	engramPath := "/opt/homebrew/bin/engram"
+	if _, err := os.Stat(engramPath); os.IsNotExist(err) {
+		engramPath = "/usr/local/bin/engram"
+		if _, err := os.Stat(engramPath); os.IsNotExist(err) {
+			// Try to find in PATH
+			if path, err := exec.LookPath("engram"); err == nil {
+				engramPath = path
+			}
+		}
+	}
+
+	plistContent := `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.gentleman.engram</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>%s</string>
+        <string>serve</string>
+    </array>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <true/>
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>HOME</key>
+        <string>%s</string>
+        <key>ENGRAM_DATA_DIR</key>
+        <string>%s/.engram</string>
+    </dict>
+    <key>StandardOutPath</key>
+    <string>%s/.engram/engram.log</string>
+    <key>StandardErrorPath</key>
+    <string>%s/.engram/engram.error.log</string>
+</dict>
+</plist>
+`
+
+	content := fmt.Sprintf(plistContent, engramPath, homeDir, homeDir, homeDir, homeDir)
+
+	if err := os.WriteFile(plistFile, []byte(content), 0644); err != nil {
+		SendLog(stepID, fmt.Sprintf("⚠️ Could not create launchd plist: %v", err))
+		return false
+	}
+
+	// Load the plist
+	result := system.Run(fmt.Sprintf("launchctl load %s", plistFile), nil)
+	if result.Error != nil {
+		SendLog(stepID, fmt.Sprintf("⚠️ Could not load launchd service: %v", result.Error))
+		return false
+	}
+
+	// Try to start
+	result = system.Run("launchctl start com.gentleman.engram", nil)
+	if result.Error != nil {
+		SendLog(stepID, "Note: Engram service loaded but not started (will start on next login)")
+	} else {
+		SendLog(stepID, "✓ Engram service started")
+	}
+
+	return true
 }
 
 // installAgentTeamsLite clones the agent-teams-lite repo and runs install.sh for each selected AI tool.

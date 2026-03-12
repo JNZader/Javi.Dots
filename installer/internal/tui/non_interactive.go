@@ -121,6 +121,11 @@ func buildStepsForChoices(m *Model) []InstallStep {
 		steps = append(steps, InstallStep{ID: "aitools", Name: "Install AI tools"})
 	}
 
+	// Engram persistent memory (if OpenCode is selected)
+	if len(m.Choices.AITools) > 0 && hasAITool(m.Choices.AITools, "opencode") {
+		steps = append(steps, InstallStep{ID: "engram", Name: "Install Engram persistent memory"})
+	}
+
 	// AI Framework
 	if m.Choices.InstallAIFramework {
 		steps = append(steps, InstallStep{ID: "aiframework", Name: "Install AI framework"})
