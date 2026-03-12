@@ -1322,6 +1322,7 @@ func stepInstallAITools(m *Model) error {
 // Sources:
 //  1. Gentleman-Skills: ~/.gentleman/skills/ (curated/ + community/)
 //  2. Project-Starter-Framework: ~/.gentleman/project-starter-framework/.ai-config/
+//  3. Agent-Teams-Lite: ~/.gentleman/agent-teams-lite/skills/
 //
 // Claude:              ~/.claude/skills/<name>  → central/<name>
 // OpenCode/Codex/Gemini: ~/.agents/skills/<name> → central/<name>
@@ -1330,6 +1331,7 @@ func setupCentralizedSkills(m *Model) error {
 	stepID := "aitools"
 	centralDir := filepath.Join(homeDir, ".gentleman", "skills")
 	psfDir := filepath.Join(homeDir, ".gentleman", "project-starter-framework")
+	atlDir := filepath.Join(homeDir, ".gentleman", "agent-teams-lite")
 
 	// Determine if any CLI needs skills
 	needsClaude := hasAITool(m.Choices.AITools, "claude")
@@ -1389,7 +1391,30 @@ func setupCentralizedSkills(m *Model) error {
 		}
 	}
 
-	// Discover all skill directories from both sources
+	// Clone or update Agent-Teams-Lite repo
+	needsCloneATL := true
+	if info, err := os.Stat(atlDir); err == nil {
+		if time.Since(info.ModTime()) < time.Hour {
+			needsCloneATL = false
+			SendLog(stepID, "Using cached Agent-Teams-Lite repo")
+		} else {
+			os.RemoveAll(atlDir)
+		}
+	}
+
+	if needsCloneATL {
+		SendLog(stepID, "Cloning Agent-Teams-Lite...")
+		system.EnsureDir(filepath.Join(homeDir, ".gentleman"))
+		result := system.RunWithLogs(
+			"git clone --depth 1 https://github.com/Gentleman-Programming/agent-teams-lite.git "+atlDir,
+			nil, func(line string) { SendLog(stepID, line) },
+		)
+		if result.Error != nil {
+			SendLog(stepID, fmt.Sprintf("⚠️ Failed to clone Agent-Teams-Lite: %v", result.Error))
+		}
+	}
+
+	// Discover all skill directories from all sources
 	var skillPaths []string
 
 	// Source 1: Gentleman-Skills (curated/ and community/)
@@ -1421,6 +1446,24 @@ func setupCentralizedSkills(m *Model) error {
 			skillFile := filepath.Join(psfSkillsDir, entry.Name(), "SKILL.md")
 			if _, err := os.Stat(skillFile); err == nil {
 				skillPaths = append(skillPaths, filepath.Join(psfSkillsDir, entry.Name()))
+			}
+		}
+	}
+
+	// Source 3: Agent-Teams-Lite (skills/)
+	atlSkillsDir := filepath.Join(atlDir, "skills")
+	if entries, err := os.ReadDir(atlSkillsDir); err == nil {
+		for _, entry := range entries {
+			if !entry.IsDir() {
+				continue
+			}
+			// Skip shared conventions folder
+			if entry.Name() == "_shared" {
+				continue
+			}
+			skillFile := filepath.Join(atlSkillsDir, entry.Name(), "SKILL.md")
+			if _, err := os.Stat(skillFile); err == nil {
+				skillPaths = append(skillPaths, filepath.Join(atlSkillsDir, entry.Name()))
 			}
 		}
 	}
