@@ -256,6 +256,114 @@ install_opencode_agents() {
     log_info "  • planner-orchestrator - Project planning"
 }
 
+# Install unified orchestrator instructions for Copilot
+install_copilot_orchestrator() {
+    local instructions_file="$REPO_ROOT/.github/copilot-instructions.md"
+    local unified_dir="$REPO_ROOT/unified-instructions"
+
+    log_header "Installing Copilot Orchestrator Instructions"
+
+    if [ ! -f "$unified_dir/orchestrator.md" ]; then
+        log_warning "Unified instructions not found: $unified_dir/orchestrator.md"
+        log_info "Skipping Copilot orchestrator installation"
+        return 1
+    fi
+
+    # Backup existing if present
+    if [ -f "$instructions_file" ]; then
+        local backup_file="$REPO_ROOT/.github/copilot-instructions.md.backup-$(date +%Y%m%d-%H%M%S)"
+        cp "$instructions_file" "$backup_file"
+        log_info "Backed up existing copilot-instructions.md"
+    fi
+
+    # Install unified orchestrator
+    cp "$unified_dir/orchestrator.md" "$instructions_file"
+    log_success "Installed unified orchestrator for GitHub Copilot"
+    log_info ""
+    log_info "Copilot now uses context-aware orchestration:"
+    log_info "  • Detects task domain automatically"
+    log_info "  • Applies appropriate patterns from unified instructions"
+    log_info "  • Single instruction file with all domains"
+}
+
+# Install unified orchestrator instructions for Gemini
+install_gemini_orchestrator() {
+    local instructions_file="$REPO_ROOT/GEMINI.md"
+    local unified_dir="$REPO_ROOT/unified-instructions"
+
+    log_header "Installing Gemini Orchestrator Instructions"
+
+    if [ ! -f "$unified_dir/orchestrator.md" ]; then
+        log_warning "Unified instructions not found: $unified_dir/orchestrator.md"
+        log_info "Skipping Gemini orchestrator installation"
+        return 1
+    fi
+
+    # Backup existing if present
+    if [ -f "$instructions_file" ]; then
+        local backup_file="$REPO_ROOT/GEMINI.md.backup-$(date +%Y%m%d-%H%M%S)"
+        cp "$instructions_file" "$backup_file"
+        log_info "Backed up existing GEMINI.md"
+    fi
+
+    # Install unified orchestrator with Gemini header
+    cat > "$instructions_file" << 'HEADER'
+# Gemini CLI Instructions
+
+> Auto-generated orchestrator for Gemini CLI
+> Run `./skills/setup.sh --install-gemini-orchestrator` to regenerate
+
+HEADER
+
+    cat "$unified_dir/orchestrator.md" >> "$instructions_file"
+    log_success "Installed unified orchestrator for Gemini CLI"
+    log_info ""
+    log_info "Gemini now uses context-aware orchestration"
+}
+
+# Install unified orchestrator instructions for Codex
+install_codex_orchestrator() {
+    local instructions_file="$REPO_ROOT/CODEX.md"
+    local unified_dir="$REPO_ROOT/unified-instructions"
+
+    log_header "Installing Codex Orchestrator Instructions"
+
+    if [ ! -f "$unified_dir/orchestrator.md" ]; then
+        log_warning "Unified instructions not found: $unified_dir/orchestrator.md"
+        log_info "Skipping Codex orchestrator installation"
+        return 1
+    fi
+
+    # Backup existing if present
+    if [ -f "$instructions_file" ]; then
+        local backup_file="$REPO_ROOT/CODEX.md.backup-$(date +%Y%m%d-%H%M%S)"
+        cp "$instructions_file" "$backup_file"
+        log_info "Backed up existing CODEX.md"
+    fi
+
+    # Install unified orchestrator with Codex header
+    cat > "$instructions_file" << 'HEADER'
+# OpenAI Codex Instructions
+
+> Auto-generated orchestrator for OpenAI Codex
+> Run `./skills/setup.sh --install-codex-orchestrator` to regenerate
+
+HEADER
+
+    cat "$unified_dir/orchestrator.md" >> "$instructions_file"
+    log_success "Installed unified orchestrator for OpenAI Codex"
+    log_info ""
+    log_info "Codex now uses context-aware orchestration"
+}
+
+# Install all orchestrators
+install_all_orchestrators() {
+    install_opencode_agents
+    install_copilot_orchestrator
+    install_gemini_orchestrator
+    install_codex_orchestrator
+}
+
 # Sync skills to Claude Code config directory
 sync_claude_config() {
     local claude_dir="$HOME/.claude/skills"
@@ -390,10 +498,14 @@ show_menu() {
     echo "  ${CYAN}8)${NC} Sync to all user configs"
     echo "  ${CYAN}9)${NC} Sync hooks to ~/.claude/hooks/"
     echo "  ${CYAN}10)${NC} Install OpenCode orchestrator agents"
+    echo "  ${CYAN}11)${NC} Install Copilot orchestrator"
+    echo "  ${CYAN}12)${NC} Install Gemini orchestrator"
+    echo "  ${CYAN}13)${NC} Install Codex orchestrator"
+    echo "  ${CYAN}14)${NC} Install ALL orchestrators"
     echo ""
     echo "  ${CYAN}0)${NC} Exit"
     echo ""
-    printf "Enter choice [0-10]: "
+    printf "Enter choice [0-14]: "
 }
 
 handle_menu_choice() {
@@ -438,6 +550,18 @@ handle_menu_choice() {
         10)
             install_opencode_agents
             ;;
+        11)
+            install_copilot_orchestrator
+            ;;
+        12)
+            install_gemini_orchestrator
+            ;;
+        13)
+            install_codex_orchestrator
+            ;;
+        14)
+            install_all_orchestrators
+            ;;
         0)
             log_info "Exiting..."
             exit 0
@@ -476,6 +600,10 @@ Options:
   --sync-hooks  Sync hooks to ~/.claude/hooks/
   --sync-all    Sync skills + hooks to all user config directories
   --install-opencode-agents  Install orchestrator agents to OpenCode
+  --install-copilot-orchestrator  Install unified orchestrator for Copilot
+  --install-gemini-orchestrator   Install unified orchestrator for Gemini
+  --install-codex-orchestrator    Install unified orchestrator for Codex
+  --install-all-orchestrators     Install all orchestrators
   --help        Show this help message
 
 Examples:
@@ -484,6 +612,7 @@ Examples:
   ./skills/setup.sh --claude     # Claude Code only
   ./skills/setup.sh --sync-all   # Sync to user configs
   ./skills/setup.sh --install-opencode-agents  # Install OpenCode agents
+  ./skills/setup.sh --install-all-orchestrators  # Install all orchestrators
 EOF
 }
 
@@ -528,6 +657,18 @@ parse_args() {
             ;;
         --install-opencode-agents)
             install_opencode_agents
+            ;;
+        --install-copilot-orchestrator)
+            install_copilot_orchestrator
+            ;;
+        --install-gemini-orchestrator)
+            install_gemini_orchestrator
+            ;;
+        --install-codex-orchestrator)
+            install_codex_orchestrator
+            ;;
+        --install-all-orchestrators)
+            install_all_orchestrators
             ;;
         --help|-h)
             show_help
