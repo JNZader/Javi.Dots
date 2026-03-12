@@ -1,7 +1,7 @@
 ---
 name: data-ai
 description: Domain orchestrator for data engineering, ML/AI, analytics, and LLM applications
-color: info
+color: "#0ea5e9"
 tools: { "Write": true, "Read": true, "MultiEdit": true, "Bash": true, "Grep": true, "Glob": true, "Task": true }
 ---
 

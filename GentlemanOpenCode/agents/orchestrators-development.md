@@ -1,7 +1,7 @@
 ---
 name: development
 description: Domain orchestrator for all development tasks — routes to the optimal language/framework specialist
-color: primary
+color: "#3b82f6"
 tools: { "Write": true, "Read": true, "MultiEdit": true, "Bash": true, "Grep": true, "Glob": true, "Task": true }
 ---
 

@@ -1,7 +1,7 @@
 ---
 name: infrastructure
 description: Domain orchestrator for DevOps, cloud, deployment, monitoring, and incident response
-color: warning
+color: "#f59e0b"
 tools: { "Write": true, "Read": true, "MultiEdit": true, "Bash": true, "Grep": true, "Glob": true, "Task": true }
 ---
 

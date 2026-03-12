@@ -1204,9 +1204,11 @@ func stepInstallAITools(m *Model) error {
 		openCodeDir := filepath.Join(homeDir, ".config/opencode")
 		system.EnsureDir(openCodeDir)
 		system.EnsureDir(filepath.Join(openCodeDir, "themes"))
+		system.EnsureDir(filepath.Join(openCodeDir, "agents"))
 		system.CopyFile(filepath.Join(repoDir, "GentlemanOpenCode/opencode.json"), filepath.Join(openCodeDir, "opencode.json"))
 		system.CopyFile(filepath.Join(repoDir, "GentlemanOpenCode/themes/gentleman.json"), filepath.Join(openCodeDir, "themes/gentleman.json"))
-		SendLog(stepID, "🧠 Copied OpenCode config")
+		system.CopyDir(filepath.Join(repoDir, "GentlemanOpenCode/agents"), filepath.Join(openCodeDir, "agents"))
+		SendLog(stepID, "🧠 Copied OpenCode config and agents")
 	}
 
 	// Install Gemini CLI

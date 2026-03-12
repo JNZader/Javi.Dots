@@ -1,7 +1,7 @@
 ---
 name: business
 description: Domain orchestrator for requirements, API design, documentation, product strategy, and project management
-color: secondary
+color: "#6b7280"
 tools: { "Write": true, "Read": true, "MultiEdit": true, "Bash": true, "Grep": true, "Glob": true, "Task": true }
 ---
 

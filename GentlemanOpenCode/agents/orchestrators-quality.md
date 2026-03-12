@@ -1,7 +1,7 @@
 ---
 name: quality
 description: Domain orchestrator for code review, testing, security, accessibility, and dependency management
-color: success
+color: "#22c55e"
 tools: { "Write": true, "Read": true, "MultiEdit": true, "Bash": true, "Grep": true, "Glob": true, "Task": true }
 ---
 
