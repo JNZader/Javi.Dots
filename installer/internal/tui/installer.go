@@ -1300,15 +1300,19 @@ func stepInstallAITools(m *Model) error {
 	return nil
 }
 
-// setupCentralizedSkills clones Gentleman-Skills repo to ~/.gentleman/skills/ and
+// setupCentralizedSkills clones skills from multiple sources and
 // creates symlinks into each CLI's skill discovery path.
-// Central source: ~/.gentleman/skills/ (curated/ + community/)
+// Sources:
+//  1. Gentleman-Skills: ~/.gentleman/skills/ (curated/ + community/)
+//  2. Project-Starter-Framework: ~/.gentleman/project-starter-framework/.ai-config/
+//
 // Claude:              ~/.claude/skills/<name>  → central/<name>
 // OpenCode/Codex/Gemini: ~/.agents/skills/<name> → central/<name>
 func setupCentralizedSkills(m *Model) error {
 	homeDir := os.Getenv("HOME")
 	stepID := "aitools"
 	centralDir := filepath.Join(homeDir, ".gentleman", "skills")
+	psfDir := filepath.Join(homeDir, ".gentleman", "project-starter-framework")
 
 	// Determine if any CLI needs skills
 	needsClaude := hasAITool(m.Choices.AITools, "claude")
@@ -1341,12 +1345,37 @@ func setupCentralizedSkills(m *Model) error {
 			nil, func(line string) { SendLog(stepID, line) },
 		)
 		if result.Error != nil {
-			return fmt.Errorf("failed to clone Gentleman-Skills: %w", result.Error)
+			SendLog(stepID, fmt.Sprintf("⚠️ Failed to clone Gentleman-Skills: %v", result.Error))
 		}
 	}
 
-	// Discover all skill directories (curated/ and community/)
+	// Clone or update Project-Starter-Framework repo
+	needsClonePSF := true
+	if info, err := os.Stat(psfDir); err == nil {
+		if time.Since(info.ModTime()) < time.Hour {
+			needsClonePSF = false
+			SendLog(stepID, "Using cached Project-Starter-Framework repo")
+		} else {
+			os.RemoveAll(psfDir)
+		}
+	}
+
+	if needsClonePSF {
+		SendLog(stepID, "Cloning Project-Starter-Framework...")
+		system.EnsureDir(filepath.Join(homeDir, ".gentleman"))
+		result := system.RunWithLogs(
+			"git clone --depth 1 https://github.com/JNZader/project-starter-framework.git "+psfDir,
+			nil, func(line string) { SendLog(stepID, line) },
+		)
+		if result.Error != nil {
+			SendLog(stepID, fmt.Sprintf("⚠️ Failed to clone Project-Starter-Framework: %v", result.Error))
+		}
+	}
+
+	// Discover all skill directories from both sources
 	var skillPaths []string
+
+	// Source 1: Gentleman-Skills (curated/ and community/)
 	for _, subdir := range []string{"curated", "community"} {
 		dir := filepath.Join(centralDir, subdir)
 		entries, err := os.ReadDir(dir)
@@ -1365,12 +1394,26 @@ func setupCentralizedSkills(m *Model) error {
 		}
 	}
 
+	// Source 2: Project-Starter-Framework (.ai-config/skills/)
+	psfSkillsDir := filepath.Join(psfDir, ".ai-config", "skills")
+	if entries, err := os.ReadDir(psfSkillsDir); err == nil {
+		for _, entry := range entries {
+			if !entry.IsDir() {
+				continue
+			}
+			skillFile := filepath.Join(psfSkillsDir, entry.Name(), "SKILL.md")
+			if _, err := os.Stat(skillFile); err == nil {
+				skillPaths = append(skillPaths, filepath.Join(psfSkillsDir, entry.Name()))
+			}
+		}
+	}
+
 	if len(skillPaths) == 0 {
-		SendLog(stepID, "⚠️ No skills found in Gentleman-Skills repo")
+		SendLog(stepID, "⚠️ No skills found in any source")
 		return nil
 	}
 
-	SendLog(stepID, fmt.Sprintf("Found %d skills in Gentleman-Skills", len(skillPaths)))
+	SendLog(stepID, fmt.Sprintf("Found %d skills from all sources", len(skillPaths)))
 
 	// Create symlinks for Claude (~/.claude/skills/<name>)
 	if needsClaude {
